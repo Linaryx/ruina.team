@@ -6,7 +6,7 @@ This repo is a Nuxt 3 static site (GitHub Pages) with markdown content via `@nux
 
 - Install: `bun install`
 - Dev server: `bun run dev`
-- Lint: `bun run lint`
+- Lint: `bun run lint` (oxlint)
 - Typecheck: `bun run typecheck`
 - Prefetch public data into `public/api-cache/`: `bun run fetch:data`
 - Static build (what CI/GitHub Pages uses): `bun run build`

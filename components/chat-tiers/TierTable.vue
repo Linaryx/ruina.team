@@ -20,11 +20,22 @@
           <td>{{ idx + 1 }}</td>
           <td>
             <div class="user">
-              <img class="avatar" :class="avatarClasses(row.userId)" :src="profiles[row.userId]?.logo"
-                @click="$emit('open-profile', row.userId)" alt="" loading="lazy" />
+              <img
+                class="avatar"
+                :class="avatarClasses(row.userId)"
+                :src="profiles[row.userId]?.logo"
+                @click="$emit('open-profile', row.userId)"
+                alt=""
+                loading="lazy"
+              />
               <div class="user-meta">
-                <span class="login" role="button" tabindex="0" @click="$emit('open-profile', row.userId)"
-                  @keydown.enter="$emit('open-profile', row.userId)">
+                <span
+                  class="login"
+                  role="button"
+                  tabindex="0"
+                  @click="$emit('open-profile', row.userId)"
+                  @keydown.enter="$emit('open-profile', row.userId)"
+                >
                   {{ profiles[row.userId]?.displayName || row.userLogin || row.userId }}
                 </span>
                 <span class="userid">ID: {{ row.userId }}</span>
@@ -63,9 +74,11 @@
               <span class="tier-hours">{{ row.windows60m, ' 60m' }}</span>
             </div>
           </td> -->
-          <td>           
-          <div class="tier-stack" :style="tierBorderStyle(row.tier5m)">
-              <span class="tier-text" :style="tierTextStyle(row.tier5m)">{{ row.scoreRounded }}</span>
+          <td>
+            <div class="tier-stack" :style="tierBorderStyle(row.tier5m)">
+              <span class="tier-text" :style="tierTextStyle(row.tier5m)">{{
+                row.scoreRounded
+              }}</span>
               <span class="tier-hours">Очков мощи</span>
             </div>
           </td>
@@ -77,9 +90,9 @@
 </template>
 
 <script setup lang="ts">
-import type { TierEntry } from '~/types/tiers';
-import { normalizeColor, tierTextColor } from '~/constants/tiers';
-import { buildScoredEntry, windowMultipliers } from '~/lib/score';
+import type { TierEntry } from "~/types/tiers";
+import { normalizeColor, tierTextColor } from "~/constants/tiers";
+import { buildScoredEntry, windowMultipliers } from "~/lib/score";
 const wrapEl = ref<HTMLElement | null>(null);
 const sentinelEl = ref<HTMLElement | null>(null);
 
@@ -91,7 +104,7 @@ const props = defineProps<{
 }>();
 
 defineEmits<{
-  (e: 'open-profile', userId: string): void;
+  (e: "open-profile", userId: string): void;
 }>();
 
 defineExpose({ wrapEl, sentinelEl });
@@ -102,9 +115,7 @@ const formatPoints = (count: number, key: keyof typeof windowMultipliers) => {
 };
 
 const scoredEntries = computed(() =>
-  [...props.entries]
-    .map(buildScoredEntry)
-    .sort((a, b) => b.score - a.score)
+  [...props.entries].map(buildScoredEntry).sort((a, b) => b.score - a.score),
 );
 
 const tierTextStyle = (tier?: string) => {
@@ -113,7 +124,7 @@ const tierTextStyle = (tier?: string) => {
   if (!color) return {};
   return {
     color,
-    fontWeight: '800',
+    fontWeight: "800",
   };
 };
 
@@ -123,8 +134,8 @@ const tierBorderStyle = (tier?: string) => {
   if (!color) return {};
   return {
     border: `2px solid ${color}`,
-    padding: '4px 8px',
-    borderRadius: '5px',
+    padding: "4px 8px",
+    borderRadius: "5px",
     color: tierTextColor(color),
   };
 };

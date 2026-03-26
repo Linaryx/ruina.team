@@ -2,7 +2,6 @@
   "name": "ruinateam",
   "private": true,
   "type": "module",
-  "packageManager": "bun@1.3.0",
   "imports": {
     "#internal/nuxt/paths": "./node_modules/@nuxt/nitro-server/dist/runtime/utils/paths"
   },
@@ -14,9 +13,9 @@
     "preview:build": "bun run build && bun run preview",
     "fetch:data": "bun scripts/fetch-data.ts",
     "scan:roles": "bun scripts/scan-roles.ts",
-    "lint": "biome lint .",
-    "format": "biome format . --write",
-    "format:check": "biome format .",
+    "lint": "oxlint --deny-warnings .",
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check .",
     "typecheck": "nuxt prepare && tsc --noEmit --skipLibCheck",
     "test": "bun run lint && bun run typecheck && bun run build"
   },
@@ -25,9 +24,12 @@
   },
   "devDependencies": {
     "@nuxt/content": "^2.13.4",
-    "@biomejs/biome": "^1.9.4",
+    "@nuxt/kit": "3.21.0",
     "nuxt": "^3.21.0",
+    "oxfmt": "^0.27.0",
+    "oxlint": "^1.42.0",
     "sirv-cli": "^2.0.2",
     "typescript": "^5.7.3"
-  }
+  },
+  "packageManager": "bun@1.3.0"
 }

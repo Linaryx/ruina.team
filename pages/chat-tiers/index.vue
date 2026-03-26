@@ -1,32 +1,38 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch, onMounted, onBeforeUnmount } from 'vue';
-import { useRoute, useRouter } from '#imports';
-import TierControls from '~/components/chat-tiers/TierControls.vue';
-import TierSummary from '~/components/chat-tiers/TierSummary.vue';
-import TierTable from '~/components/chat-tiers/TierTable.vue';
-import UserCard from '~/components/chat-tiers/UserCard.vue';
-import LoadingBar from '~/components/chat-tiers/LoadingBar.vue';
-import { useRoles } from '~/composables/useRoles';
-import { defaultTierColors, tierRanges } from '~/constants/tiers';
-import { fetchAvailableChannels, fetchAvailablePeriods, fetchTiersSupabase as fetchTiers } from '~/lib/api';
-import type { Mode, Scope, TierEntry, TierResponse } from '~/types/tiers';
+import { computed, reactive, ref, watch, onMounted, onBeforeUnmount } from "vue";
+import { useRoute, useRouter } from "#imports";
+import TierControls from "~/components/chat-tiers/TierControls.vue";
+import TierSummary from "~/components/chat-tiers/TierSummary.vue";
+import TierTable from "~/components/chat-tiers/TierTable.vue";
+import UserCard from "~/components/chat-tiers/UserCard.vue";
+import LoadingBar from "~/components/chat-tiers/LoadingBar.vue";
+import { useRoles } from "~/composables/useRoles";
+import { defaultTierColors, tierRanges } from "~/constants/tiers";
+import {
+  fetchAvailableChannels,
+  fetchAvailablePeriods,
+  fetchTiersSupabase as fetchTiers,
+} from "~/lib/api";
+import type { Mode, Scope, TierEntry, TierResponse } from "~/types/tiers";
 
-const channel = ref('zakvielchannel');
+const channel = ref("zakvielchannel");
 const year = ref(new Date().getFullYear());
 const month = ref(new Date().getMonth() + 1);
-const scope = ref<Scope>('month');
-const mode = ref<Mode>('online');
+const scope = ref<Scope>("month");
+const mode = ref<Mode>("online");
 const availableYears = ref<number[]>([]);
 const availableMonthsMap = ref<Record<number, number[]>>({});
 const availableMonths = computed(() => availableMonthsMap.value[year.value] || []);
 const availableChannels = ref<string[]>([]);
-const availableScopes = ref<Scope[]>(['year', 'month']);
+const availableScopes = ref<Scope[]>(["year", "month"]);
 const availableModesMap = ref<Record<Scope, Mode[]>>({
-  year: ['all', 'online', 'offline'],
-  month: ['all', 'online', 'offline'],
-  day: ['all', 'online', 'offline'],
+  year: ["all", "online", "offline"],
+  month: ["all", "online", "offline"],
+  day: ["all", "online", "offline"],
 });
-const availableModes = computed(() => availableModesMap.value[scope.value] || ['all', 'online', 'offline']);
+const availableModes = computed(
+  () => availableModesMap.value[scope.value] || ["all", "online", "offline"],
+);
 
 type IvrUser = {
   id: string;
@@ -39,9 +45,11 @@ type IvrUser = {
 };
 
 type Relation = { followedAt?: string; subMonths?: number; subEnd?: string };
-const profiles = reactive<Record<string, { displayName: string; login: string; logo?: string }>>({});
+const profiles = reactive<Record<string, { displayName: string; login: string; logo?: string }>>(
+  {},
+);
 const relations = reactive<Record<string, Relation>>({});
-const userLookup = ref('');
+const userLookup = ref("");
 const userData = ref<IvrUser | null>(null);
 const userLoading = ref(false);
 const userError = ref<string | null>(null);
@@ -68,29 +76,29 @@ const plural = (n: number, forms: [string, string, string]) => {
 };
 
 const humanizeFromDate = (iso?: string) => {
-  if (!iso) return '-';
+  if (!iso) return "-";
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '-';
+  if (Number.isNaN(d.getTime())) return "-";
   const now = new Date();
   const diffMs = now.getTime() - d.getTime();
   const days = Math.max(0, Math.floor(diffMs / 86400000));
   const yearsDiff = Math.floor(days / 365);
   const monthsDiff = Math.floor((days % 365) / 30);
   const parts: string[] = [];
-  if (yearsDiff) parts.push(`${yearsDiff} ${plural(yearsDiff, ['год', 'года', 'лет'])}`);
-  if (monthsDiff) parts.push(`${monthsDiff} ${plural(monthsDiff, ['месяц', 'месяца', 'месяцев'])}`);
-  if (!parts.length) parts.push('меньше месяца');
-  return `${d.toLocaleDateString('ru-RU')} · ${parts.join(' ')} назад`;
+  if (yearsDiff) parts.push(`${yearsDiff} ${plural(yearsDiff, ["год", "года", "лет"])}`);
+  if (monthsDiff) parts.push(`${monthsDiff} ${plural(monthsDiff, ["месяц", "месяца", "месяцев"])}`);
+  if (!parts.length) parts.push("меньше месяца");
+  return `${d.toLocaleDateString("ru-RU")} · ${parts.join(" ")} назад`;
 };
 
 const humanizeMonths = (months?: number) => {
-  if (months == null) return '-';
+  if (months == null) return "-";
   const y = Math.floor(months / 12);
   const m = months % 12;
   const parts: string[] = [];
-  if (y) parts.push(`${y} ${plural(y, ['год', 'года', 'лет'])}`);
-  if (m) parts.push(`${m} ${plural(m, ['месяц', 'месяца', 'месяцев'])}`);
-  const base = parts.length ? parts.join(' ') : `${months} мес`;
+  if (y) parts.push(`${y} ${plural(y, ["год", "года", "лет"])}`);
+  if (m) parts.push(`${m} ${plural(m, ["месяц", "месяца", "месяцев"])}`);
+  const base = parts.length ? parts.join(" ") : `${months} мес`;
   return `${months} мес (${base})`;
 };
 const formatHours = (count: number, minutes: number) => {
@@ -106,7 +114,9 @@ const fetchProfiles = async (ids: string[]) => {
   for (let i = 0; i < uniq.length; i += chunkSize) {
     const chunk = uniq.slice(i, i + chunkSize);
     try {
-      const res = await $fetch<IvrUser[]>(`https://api.ivr.fi/v2/twitch/user?id=${chunk.join(',')}`);
+      const res = await $fetch<IvrUser[]>(
+        `https://api.ivr.fi/v2/twitch/user?id=${chunk.join(",")}`,
+      );
       res.forEach((u) => {
         profiles[u.id] = { displayName: u.displayName, login: u.login, logo: u.logo };
       });
@@ -125,7 +135,7 @@ const fetchRelations = async (ids: string[]) => {
     if (!prof || relations[id]) continue;
     try {
       const res: any = await $fetch(
-        `https://api.ivr.fi/v2/twitch/subage/${prof.login}/${channelLogin}`
+        `https://api.ivr.fi/v2/twitch/subage/${prof.login}/${channelLogin}`,
       );
       relations[id] = {
         followedAt: res?.followedAt || undefined,
@@ -152,11 +162,13 @@ const fetchUser = async () => {
       : `https://api.ivr.fi/v2/twitch/user?login=${encodeURIComponent(term)}`;
     let res = await $fetch<IvrUser[]>(primaryUrl);
     if ((!res || !res.length) && !isId) {
-      res = await $fetch<IvrUser[]>(`https://api.ivr.fi/v2/twitch/user?id=${encodeURIComponent(term)}`);
+      res = await $fetch<IvrUser[]>(
+        `https://api.ivr.fi/v2/twitch/user?id=${encodeURIComponent(term)}`,
+      );
     }
     userData.value = res?.[0] ?? null;
     if (!res?.length) {
-      userError.value = 'Not found';
+      userError.value = "Not found";
       showProfile.value = false;
     } else {
       showProfile.value = true;
@@ -176,9 +188,9 @@ const fetchUser = async () => {
     }
   } catch (e: unknown) {
     const msg =
-      typeof e === 'object' && e && 'message' in e && (e as any).message
+      typeof e === "object" && e && "message" in e && (e as any).message
         ? String((e as any).message)
-        : 'Request failed';
+        : "Request failed";
     userError.value = msg;
     showProfile.value = false;
   } finally {
@@ -215,7 +227,7 @@ const openProfile = async (userId: string) => {
 const data = ref<TierResponse | null>(null);
 const pending = ref(false);
 const error = ref<unknown>(null);
-const loadingNote = ref('');
+const loadingNote = ref("");
 const elapsedMs = ref(0);
 let timer: ReturnType<typeof setInterval> | null = null;
 
@@ -228,13 +240,13 @@ const clearTimer = () => {
 
 const syncFromQuery = () => {
   const q = route.query;
-  if (typeof q.channel === 'string' && q.channel.trim()) channel.value = q.channel.trim();
-  if (q.scope === 'year' || q.scope === 'month') scope.value = q.scope;
+  if (typeof q.channel === "string" && q.channel.trim()) channel.value = q.channel.trim();
+  if (q.scope === "year" || q.scope === "month") scope.value = q.scope;
   const y = Number(q.year);
   if (Number.isFinite(y) && y > 2000) year.value = y;
   const m = Number(q.month);
   if (Number.isFinite(m) && m >= 1 && m <= 12) month.value = m;
-  if (q.mode === 'all' || q.mode === 'online' || q.mode === 'offline') mode.value = q.mode;
+  if (q.mode === "all" || q.mode === "online" || q.mode === "offline") mode.value = q.mode;
 };
 
 const pushQuery = () => {
@@ -256,10 +268,10 @@ const alignToAvailable = () => {
   if (availableYears.value.length && !availableYears.value.includes(year.value)) {
     year.value = availableYears.value[0];
   }
-  if (scope.value === 'month') {
+  if (scope.value === "month") {
     const monthsForYear = availableMonths.value;
     if (!monthsForYear.length) {
-      scope.value = 'year';
+      scope.value = "year";
     } else if (!monthsForYear.includes(month.value)) {
       month.value = monthsForYear[0];
     }
@@ -279,9 +291,9 @@ const loadAvailable = async () => {
     availableModesMap.value = res.modes as Record<Scope, Mode[]>;
     const hasMonths = Object.keys(res.months || {}).length > 0;
     const scopes: Scope[] = [];
-    if (res.years.length) scopes.push('year');
-    if (hasMonths) scopes.push('month');
-    availableScopes.value = scopes.length ? scopes : ['year'];
+    if (res.years.length) scopes.push("year");
+    if (hasMonths) scopes.push("month");
+    availableScopes.value = scopes.length ? scopes : ["year"];
     // первично сдвигаем год/месяц в допустимые для текущего канала
     const firstYear = res.years[0];
     if (firstYear && !res.years.includes(year.value)) {
@@ -302,14 +314,14 @@ const loadAvailable = async () => {
     availableChannels.value = [];
     availableYears.value = [];
     availableMonthsMap.value = {};
-    availableScopes.value = ['year'];
+    availableScopes.value = ["year"];
   }
 };
 
 const loadTiers = async () => {
   pending.value = true;
   error.value = null;
-  loadingNote.value = 'Готовим запрос...';
+  loadingNote.value = "Готовим запрос...";
   elapsedMs.value = 0;
   clearTimer();
   const started = Date.now();
@@ -322,14 +334,14 @@ const loadTiers = async () => {
       scope: scope.value,
       year: year.value,
       month: month.value,
-      mode: mode.value
+      mode: mode.value,
     });
     prefetchIndex.value = 0;
     await prefetchMoreProfiles();
     loadingNote.value = `Готово за ${elapsedMs.value} ms`;
   } catch (e: unknown) {
     error.value = e;
-    loadingNote.value = 'Ошибка запроса';
+    loadingNote.value = "Ошибка запроса";
   } finally {
     clearTimer();
     pending.value = false;
@@ -345,7 +357,7 @@ watch(
     await fetchRelations(topIds);
     setupPrefetchObserver();
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 const reload = async () => {
@@ -360,7 +372,7 @@ watch(
   () => {
     alignToAvailable();
     pushQuery();
-  }
+  },
 );
 
 watch(
@@ -368,23 +380,23 @@ watch(
   async () => {
     await loadAvailable();
     pushQuery();
-  }
+  },
 );
 
 watch(
   () => availableScopes.value,
   () => {
     if (!availableScopes.value.includes(scope.value)) {
-      scope.value = availableScopes.value[0] || 'year';
+      scope.value = availableScopes.value[0] || "year";
     }
     alignToAvailable();
   },
-  { deep: true }
+  { deep: true },
 );
 
 watch(
   () => [scope.value, month.value, mode.value],
-  () => pushQuery()
+  () => pushQuery(),
 );
 
 const prefetchMoreProfiles = async () => {
@@ -421,13 +433,13 @@ const setupPrefetchObserver = () => {
   });
   prefetchObserver.observe(sentinel);
 
-  wrap.removeEventListener('scroll', handleScroll, { passive: true } as any);
-  wrap.addEventListener('scroll', handleScroll, { passive: true });
+  wrap.removeEventListener("scroll", handleScroll, { passive: true } as any);
+  wrap.addEventListener("scroll", handleScroll, { passive: true });
 };
 
 const handleScroll = () => {
   if (!scrollEl) return;
-  const maxScroll = (scrollEl.scrollHeight - scrollEl.clientHeight) || 1;
+  const maxScroll = scrollEl.scrollHeight - scrollEl.clientHeight || 1;
   const progress = Math.min(1, scrollEl.scrollTop / maxScroll);
   if (progress > 0.7) {
     prefetchMoreProfiles();
@@ -445,14 +457,14 @@ onBeforeUnmount(() => {
     prefetchObserver.disconnect();
   }
   if (scrollEl) {
-    scrollEl.removeEventListener('scroll', handleScroll);
+    scrollEl.removeEventListener("scroll", handleScroll);
   }
 });
 
 const periodText = computed(() => {
-  if (!data.value) return '';
+  if (!data.value) return "";
   const { year: y, month: m } = data.value;
-  return [y, m].filter(Boolean).join('/');
+  return [y, m].filter(Boolean).join("/");
 });
 
 const selectedEntry = computed(() => {
@@ -467,18 +479,18 @@ const selectedRank = computed(() => {
 });
 
 const displayNameLine = computed(() => {
-  if (!userData.value) return '';
+  if (!userData.value) return "";
   const { displayName, login } = userData.value;
-  if (!displayName || !login) return displayName || login || '';
+  if (!displayName || !login) return displayName || login || "";
   if (displayName.toLowerCase() === login.toLowerCase()) return displayName;
   return `${displayName} (${login})`;
 });
 
 const errorText = computed(() => {
   const val = error.value;
-  if (!val) return '';
-  if (typeof val === 'string') return val;
-  if (typeof val === 'object' && 'message' in val && val?.message) {
+  if (!val) return "";
+  if (typeof val === "string") return val;
+  if (typeof val === "object" && "message" in val && val?.message) {
     return String((val as any).message);
   }
   return String(val);
@@ -491,11 +503,14 @@ const errorText = computed(() => {
       <div>
         <h1>Рейтинг пользователей чата</h1>
         <p class="muted">
-          Подгружаем данные из <a href="https://github.com/Linaryx/rustlog" target="_blank" rel="noopener noreferrer">rustlog tiers</a>: online / offline / all
+          Подгружаем данные из
+          <a href="https://github.com/Linaryx/rustlog" target="_blank" rel="noopener noreferrer"
+            >rustlog tiers</a
+          >: online / offline / all
         </p>
       </div>
       <button class="btn primary refresh-btn" @click="reload" :disabled="pending">
-        {{ pending ? 'Загрузка...' : 'Загрузить статистику' }}
+        {{ pending ? "Загрузка..." : "Загрузить статистику" }}
       </button>
     </header>
 
@@ -523,13 +538,15 @@ const errorText = computed(() => {
         <div class="lookup-row">
           <input v-model="userLookup" type="text" placeholder="login or id" />
           <button class="btn primary" @click="fetchUser" :disabled="userLoading">
-            {{ userLoading ? 'Загрузка...' : 'Поиск' }}
+            {{ userLoading ? "Загрузка..." : "Поиск" }}
           </button>
         </div>
         <p v-if="userError" class="error-text">Ошибка: {{ userError }}</p>
         <div v-if="userData" class="profile-mini">
           <span class="value">{{ userData.displayName }}</span>
-          <button class="btn secondary" @click="showProfile = !showProfile">{{ showProfile ? 'Скрыть карточку' : 'Карточка' }}</button>
+          <button class="btn secondary" @click="showProfile = !showProfile">
+            {{ showProfile ? "Скрыть карточку" : "Карточка" }}
+          </button>
         </div>
       </div>
     </section>
@@ -582,7 +599,6 @@ const errorText = computed(() => {
         @open-profile="openProfile"
       />
     </section>
-
   </main>
 
   <UserCard
@@ -592,7 +608,9 @@ const errorText = computed(() => {
     :created-text="humanizeFromDate(userData.createdAt)"
     :follow-text="humanizeFromDate(relations[userData.id]?.followedAt)"
     :sub-text="humanizeMonths(relations[userData.id]?.subMonths)"
-    :role-text="userData.roles?.isPartner ? 'Партнёр' : (userData.roles?.isAffiliate ? 'Компаньон' : '')"
+    :role-text="
+      userData.roles?.isPartner ? 'Партнёр' : userData.roles?.isAffiliate ? 'Компаньон' : ''
+    "
     :selected-entry="selectedEntry"
     :selected-rank="selectedRank"
     :tier-colors="tierColors"
@@ -799,8 +817,14 @@ h1 {
   background: var(--color-brand-accent-1);
   border-color: var(--color-brand-accent-2);
   color: #ffffff;
-  box-shadow: 0 6px 20px rgba(16, 174, 185, 0.15), 0 0 12px rgba(16, 145, 185, 0.35);
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s, color 0.15s;
+  box-shadow:
+    0 6px 20px rgba(16, 174, 185, 0.15),
+    0 0 12px rgba(16, 145, 185, 0.35);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s,
+    color 0.15s;
 }
 
 .btn.primary.refresh-btn:hover {
@@ -811,7 +835,9 @@ h1 {
   transform: none;
   border-color: #065f46;
   background: #059669;
-  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.12), 0 0 10px rgba(16, 185, 129, 0.3);
+  box-shadow:
+    0 6px 18px rgba(16, 185, 129, 0.12),
+    0 0 10px rgba(16, 185, 129, 0.3);
 }
 
 /* Disabled state: gray and non-interactive */

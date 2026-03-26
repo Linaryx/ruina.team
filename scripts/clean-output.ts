@@ -1,5 +1,5 @@
-import fs from 'node:fs/promises';
-import path from 'node:path';
+import fs from "node:fs/promises";
+import path from "node:path";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -25,17 +25,17 @@ const exists = async (p: string) => {
  */
 async function main() {
   const root = process.cwd();
-  const outDir = path.join(root, 'dist');
-  const legacyOutDir = path.join(root, '.output'); // older default; keep clean optional
+  const outDir = path.join(root, "dist");
+  const legacyOutDir = path.join(root, ".output"); // older default; keep clean optional
 
   const targets = [outDir, legacyOutDir];
   const now = new Date();
-  const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(
+  const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(
     now.getDate(),
-  ).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(
+  ).padStart(2, "0")}_${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(
     2,
-    '0',
-  )}${String(now.getSeconds()).padStart(2, '0')}`;
+    "0",
+  )}${String(now.getSeconds()).padStart(2, "0")}`;
 
   for (const dir of targets) {
     if (!(await exists(dir))) continue;
@@ -50,8 +50,8 @@ async function main() {
           await rmDir(tmp);
           break;
         } catch (e: any) {
-          const code = String(e?.code || '');
-          if (code !== 'EBUSY' && code !== 'EPERM') break;
+          const code = String(e?.code || "");
+          if (code !== "EBUSY" && code !== "EPERM") break;
           await sleep(150 * (i + 1));
         }
       }
@@ -66,8 +66,8 @@ async function main() {
         await rmDir(dir);
         break;
       } catch (e: any) {
-        const code = String(e?.code || '');
-        if (code !== 'EBUSY' && code !== 'EPERM') throw e;
+        const code = String(e?.code || "");
+        if (code !== "EBUSY" && code !== "EPERM") throw e;
         await sleep(200 * (i + 1));
       }
     }
@@ -75,7 +75,7 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error('[clean] failed:', err);
+  console.error("[clean] failed:", err);
   // Don't hard-fail the pipeline; Nuxt will attempt its own cleanup too.
   process.exitCode = 0;
 });

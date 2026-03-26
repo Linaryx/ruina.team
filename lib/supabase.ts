@@ -1,5 +1,5 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { useRuntimeConfig } from '#app';
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { useRuntimeConfig } from "#app";
 
 let client: SupabaseClient | null = null;
 

@@ -16,8 +16,8 @@
         <div class="footer-inner">
           <h2>Кто мы?</h2>
           <p class="footer-text">
-            Команда людей, которым не всё равно. Делаем гайды, модпаки и инструменты для стримеров и их
-            сообщества.
+            Команда людей, которым не всё равно. Делаем гайды, модпаки и инструменты для стримеров и
+            их сообщества.
           </p>
 
           <div class="footer-actions">
@@ -30,8 +30,12 @@
               </svg>
               <span>contact@ruina.team</span>
             </a>
-            <a class="action" href="https://github.com/Linaryx/linaryx.github.io" target="_blank"
-              rel="noopener noreferrer">
+            <a
+              class="action"
+              href="https://github.com/Linaryx/linaryx.github.io"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                 <path
                   fill="currentColor"
@@ -48,7 +52,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onMounted, ref } from "vue";
 
 // On hard refresh (F5) web fonts may apply after first paint, causing a visible "jump".
 // We start the hero animation only after fonts are ready (or after a short timeout).
@@ -64,7 +68,7 @@ onMounted(() => {
   const maxWaitMs = 400;
   const fontsReady = (document as any)?.fonts?.ready as Promise<void> | undefined;
 
-  if (fontsReady && typeof (fontsReady as any).then === 'function') {
+  if (fontsReady && typeof (fontsReady as any).then === "function") {
     Promise.race([fontsReady, new Promise((r) => setTimeout(r, maxWaitMs))])
       .then(start)
       .catch(start);
@@ -197,7 +201,9 @@ onMounted(() => {
 .footer {
   position: relative;
   z-index: 2;
-  background: url("~/assets/img/bg.webp") center / cover no-repeat, #0b0b0e;
+  background:
+    url("~/assets/img/bg.webp") center / cover no-repeat,
+    #0b0b0e;
   margin-top: auto;
   /* push footer to bottom when content is short */
 }
@@ -245,7 +251,10 @@ onMounted(() => {
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.06);
-  transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease,
+    transform 0.12s ease;
 }
 
 .icon {

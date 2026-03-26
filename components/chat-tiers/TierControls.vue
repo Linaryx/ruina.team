@@ -47,13 +47,12 @@
         </option>
       </select>
     </label>
-
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, watch } from 'vue';
-import type { Mode, Scope } from '~/types/tiers';
+import { computed, reactive, watch } from "vue";
+import type { Mode, Scope } from "~/types/tiers";
 
 const props = defineProps<{
   channel: string;
@@ -69,34 +68,35 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'update:channel', v: string): void;
-  (e: 'update:scope', v: Scope): void;
-  (e: 'update:year', v: number): void;
-  (e: 'update:month', v: number): void;
-  (e: 'update:mode', v: Mode): void;
-  (e: 'reload'): void;
+  (e: "update:channel", v: string): void;
+  (e: "update:scope", v: Scope): void;
+  (e: "update:year", v: number): void;
+  (e: "update:month", v: number): void;
+  (e: "update:mode", v: Mode): void;
+  (e: "reload"): void;
 }>();
 
 const modeOptions: { label: string; value: Mode }[] = [
-  { label: 'All', value: 'all' as Mode },
-  { label: 'Online', value: 'online' as Mode },
-  { label: 'Offline', value: 'offline' as Mode },
+  { label: "All", value: "all" as Mode },
+  { label: "Online", value: "online" as Mode },
+  { label: "Offline", value: "offline" as Mode },
 ];
 const scopeOptions = computed<{ label: string; value: Scope }[]>(() => {
-  const avail = props.availableScopes && props.availableScopes.length
-    ? props.availableScopes
-    : (['year', 'month'] as Scope[]);
+  const avail =
+    props.availableScopes && props.availableScopes.length
+      ? props.availableScopes
+      : (["year", "month"] as Scope[]);
   return avail.map((s) => ({
     value: s,
-    label: s === 'year' ? 'Year' : 'Month',
+    label: s === "year" ? "Year" : "Month",
   }));
 });
 const modeOptionsComputed = computed(() => {
   const avail = props.availableModes && props.availableModes.length ? props.availableModes : null;
-  const base = avail || (['all', 'online', 'offline'] as Mode[]);
+  const base = avail || (["all", "online", "offline"] as Mode[]);
   return base.map((m: Mode) => ({
     value: m,
-    label: m === 'all' ? 'All' : m === 'online' ? 'Online' : 'Offline',
+    label: m === "all" ? "All" : m === "online" ? "Online" : "Offline",
   }));
 });
 
@@ -113,73 +113,74 @@ watch(
   () => props.channel,
   (v) => {
     local.channel = v;
-  }
+  },
 );
 watch(
   () => props.scope,
   (v) => {
     local.scope = v;
-  }
+  },
 );
 watch(
   () => props.year,
   (v) => {
     local.year = v;
-  }
+  },
 );
 watch(
   () => props.month,
   (v) => {
     local.month = v;
-  }
+  },
 );
 watch(
   () => props.mode,
   (v) => {
     local.mode = v;
-  }
+  },
 );
 
 const currentYear = new Date().getFullYear();
 const channelOptions = computed(() => props.availableChannels || []);
 const defaultYears = Array.from({ length: currentYear - 2021 }, (_, i) => currentYear - i);
 const defaultMonthOptions = [
-  { value: 1, label: '01 · Январь' },
-  { value: 2, label: '02 · Февраль' },
-  { value: 3, label: '03 · Март' },
-  { value: 4, label: '04 · Апрель' },
-  { value: 5, label: '05 · Май' },
-  { value: 6, label: '06 · Июнь' },
-  { value: 7, label: '07 · Июль' },
-  { value: 8, label: '08 · Август' },
-  { value: 9, label: '09 · Сентябрь' },
-  { value: 10, label: '10 · Октябрь' },
-  { value: 11, label: '11 · Ноябрь' },
-  { value: 12, label: '12 · Декабрь' },
+  { value: 1, label: "01 · Январь" },
+  { value: 2, label: "02 · Февраль" },
+  { value: 3, label: "03 · Март" },
+  { value: 4, label: "04 · Апрель" },
+  { value: 5, label: "05 · Май" },
+  { value: 6, label: "06 · Июнь" },
+  { value: 7, label: "07 · Июль" },
+  { value: 8, label: "08 · Август" },
+  { value: 9, label: "09 · Сентябрь" },
+  { value: 10, label: "10 · Октябрь" },
+  { value: 11, label: "11 · Ноябрь" },
+  { value: 12, label: "12 · Декабрь" },
 ];
 const monthOptions = computed(() => {
   const avail = props.availableMonths || [];
   if (avail.length) {
     return avail.map((m) => {
       const base = defaultMonthOptions.find((o) => o.value === m);
-      return { value: m, label: base ? base.label : m.toString().padStart(2, '0') };
+      return { value: m, label: base ? base.label : m.toString().padStart(2, "0") };
     });
   }
   return defaultMonthOptions;
 });
-const yearOptions = computed(() => (props.availableYears?.length ? props.availableYears : defaultYears));
+const yearOptions = computed(() =>
+  props.availableYears?.length ? props.availableYears : defaultYears,
+);
 watch(
   () => ({ ...local }),
   (v) => {
-    emit('update:channel', v.channel);
-    emit('update:scope', v.scope);
-    emit('update:year', v.year);
-    emit('update:month', v.month);
-    emit('update:mode', v.mode);
+    emit("update:channel", v.channel);
+    emit("update:scope", v.scope);
+    emit("update:year", v.year);
+    emit("update:month", v.month);
+    emit("update:mode", v.mode);
   },
-  { deep: true }
+  { deep: true },
 );
-
 </script>
 
 <style scoped>

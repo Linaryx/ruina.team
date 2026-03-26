@@ -8,11 +8,7 @@
       "description": "В этой статье мы рассмотрим, как установить и настроить Minecraft на вашем компьютере.",
       "image_url": "https://5051.lol/r/je8L.png ",
       "created_at": "2025-12-20T10:30:00Z",
-      "tags": [
-        "Minecraft",
-        "Приложения",
-        "Игры"
-      ],
+      "tags": ["Minecraft", "Приложения", "Игры"],
       "content_md": "MD"
     },
     {
@@ -23,11 +19,7 @@
       "description": "Почему правильно выбранное имя переменной важнее, чем сам алгоритм.",
       "image_url": "https://5051.lol/r/VxOo.png ",
       "created_at": "2025-02-01T1`4:45:00Z",
-      "tags": [
-        "Clean Code",
-        "Development",
-        "Architecture"
-      ],
+      "tags": ["Clean Code", "Development", "Architecture"],
       "content_md": "MD"
     }
   ]

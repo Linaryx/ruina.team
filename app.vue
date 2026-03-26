@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const route = useRoute();
-const isHome = computed(() => route.path === '/');
-const isChatTiers = computed(() => route.path.startsWith('/chat-tiers'));
+const isHome = computed(() => route.path === "/");
+const isChatTiers = computed(() => route.path.startsWith("/chat-tiers"));
 
 const navRef = ref<{ el: HTMLElement | null } | null>(null);
 const navHeight = ref(0);
@@ -26,13 +26,17 @@ onMounted(() => {
   }
 
   // If the document is already fully loaded, set ready immediately
-  if (document.readyState === 'complete') {
+  if (document.readyState === "complete") {
     isLoaded.value = true;
   } else {
     // Wait for the window load event (fires when all resources finished loading)
-    window.addEventListener('load', () => {
-      isLoaded.value = true;
-    }, { once: true });
+    window.addEventListener(
+      "load",
+      () => {
+        isLoaded.value = true;
+      },
+      { once: true },
+    );
 
     // Safety fallback: ensure the app becomes visible eventually
     setTimeout(() => {
@@ -52,14 +56,24 @@ onBeforeUnmount(() => {
     <div v-if="!isLoaded" class="app-loading-root" aria-live="polite">
       <div class="app-loader">
         <!-- Use the progress.svg file directly and avoid applying color/filter overrides -->
-        <img class="spinner" src="/assets/img/svg/progress.svg" role="status" aria-hidden="true" alt="" />
+        <img
+          class="spinner"
+          src="/assets/img/svg/progress.svg"
+          role="status"
+          aria-hidden="true"
+          alt=""
+        />
         <div class="app-loading-text">Загрузка…</div>
       </div>
-    </div> 
+    </div>
 
     <!-- Main site rendered only after "load" -->
-    <div v-else class="page" :class="{ 'is-home': isHome, 'is-chat-tiers': isChatTiers }" :style="{ '--nav-height': `${navHeight}px` }">
-      <LoadingOverlay />
+    <div
+      v-else
+      class="page"
+      :class="{ 'is-home': isHome, 'is-chat-tiers': isChatTiers }"
+      :style="{ '--nav-height': `${navHeight}px` }"
+    >
       <div class="site-bg" aria-hidden="true"></div>
       <NavBar ref="navRef" :hero="isHome" />
       <div :class="['shell', { 'shell--full': isHome }]">

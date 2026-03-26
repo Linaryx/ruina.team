@@ -1,12 +1,12 @@
 <template>
   <div class="chip" :style="borderStyle">
-    <span class="tier-text" :style="textStyle">{{ label }} · {{ tier || '-' }}</span>
+    <span class="tier-text" :style="textStyle">{{ label }} · {{ tier || "-" }}</span>
     <span class="tier-hours">{{ hours }}</span>
   </div>
 </template>
 
 <script setup lang="ts">
-import { normalizeColor } from '~/constants/tiers';
+import { normalizeColor } from "~/constants/tiers";
 
 const props = defineProps<{
   label: string;
@@ -16,19 +16,19 @@ const props = defineProps<{
 }>();
 
 const color = computed(() => {
-  if (!props.tier) return '#2d2d2d';
+  if (!props.tier) return "#2d2d2d";
   return normalizeColor(props.colors[props.tier]);
 });
 
 const borderStyle = computed(() => ({
   border: `1px solid ${color.value}`,
-  padding: '4px 8px',
-  borderRadius: '10px',
+  padding: "4px 8px",
+  borderRadius: "10px",
 }));
 
 const textStyle = computed(() => ({
   color: color.value,
-  fontWeight: '800',
+  fontWeight: "800",
 }));
 </script>
 

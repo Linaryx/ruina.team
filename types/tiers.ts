@@ -1,5 +1,5 @@
-export type Mode = 'all' | 'online' | 'offline';
-export type Scope = 'year' | 'month' | 'day';
+export type Mode = "all" | "online" | "offline";
+export type Scope = "year" | "month" | "day";
 
 export type TierEntry = {
   userId: string;

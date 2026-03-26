@@ -1,40 +1,40 @@
 <script setup lang="ts">
-const { data: guidesRaw } = await useAsyncData('guides-list', () =>
-  queryContent('/guides')
-    .where({ _extension: 'md' })
+const { data: guidesRaw } = await useAsyncData("guides-list", () =>
+  queryContent("/guides")
+    .where({ _extension: "md" })
     .only([
-      '_path',
-      'title',
-      'author',
-      'description',
-      'image_url',
-      'created_at',
-      'updated_at',
-      'tags',
+      "_path",
+      "title",
+      "author",
+      "description",
+      "image_url",
+      "created_at",
+      "updated_at",
+      "tags",
     ])
     .sort({ created_at: -1 })
-    .find()
+    .find(),
 );
 
-const formatDate = (value?: string) => {
-  if (!value) return '—';
+const formatDate = (value?: string | number | Date | null) => {
+  if (!value) return "—";
   const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString('ru-RU');
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("ru-RU");
 };
 
 const cards = computed(() =>
   (guidesRaw.value || []).map((item, idx) => ({
     path: item._path,
     title: item.title || `Гайд #${idx + 1}`,
-    author: item.author || 'Автор',
+    author: item.author || "Автор",
     description:
       item.description ||
-      'Краткое описание гайда. Добавьте description во фронтматтер, чтобы перезаписать это значение.',
-    image: item.image_url || '/favicon.svg',
+      "Краткое описание гайда. Добавьте description во фронтматтер, чтобы перезаписать это значение.",
+    image: item.image_url || "/favicon.svg",
     updatedAt: item.updated_at || item.created_at,
     tags: Array.isArray(item.tags) ? item.tags : [],
-  }))
+  })),
 );
 </script>
 
@@ -73,8 +73,12 @@ const cards = computed(() =>
           </p>
 
           <div class="guide-tags" v-if="guide.tags.length">
-            <span v-for="(tag, tagIdx) in guide.tags" :key="`${guide.path}-${tag}-${tagIdx}`" class="tag-pill"
-              :class="`tag-${(tagIdx % 3) + 1}`">
+            <span
+              v-for="(tag, tagIdx) in guide.tags"
+              :key="`${guide.path}-${tag}-${tagIdx}`"
+              class="tag-pill"
+              :class="`tag-${(tagIdx % 3) + 1}`"
+            >
               {{ tag }}
             </span>
           </div>
@@ -83,7 +87,10 @@ const cards = computed(() =>
     </div>
 
     <section v-else class="empty-state card">
-      <p>Пока нет гайдов. Добавьте MD-файлы в content/guides/ с фронтматтером и перезагрузите страницу.</p>
+      <p>
+        Пока нет гайдов. Добавьте MD-файлы в content/guides/ с фронтматтером и перезагрузите
+        страницу.
+      </p>
     </section>
   </main>
 </template>
@@ -130,14 +137,8 @@ const cards = computed(() =>
   background: var(--color-bg3);
   border: 1px solid var(--color-border);
   border-radius: 18px;
-  transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
   box-shadow: var(--shadow-soft);
   color: inherit;
-}
-
-.guide-row:hover {
-  transform: translateY(-2px);
-  border-color: var(--color-brand-soft);
 }
 
 .guide-thumb {

@@ -34,8 +34,22 @@ const collectContentRoutes = (dir: string, base: string[] = []): string[] => {
 const contentRoutes = collectContentRoutes(contentDir);
 
 export default defineNuxtConfig({
+  // Lock behavior of presets/modules (Nitro, etc.) to avoid unexpected changes.
+  compatibilityDate: "2026-01-28",
   modules: ["@nuxt/content"],
   css: ["~/assets/css/tokens.css", "~/assets/css/base.css"],
+  vite: {
+    // Work around Vite resolving Nuxt's optional `#app-manifest` virtual module in dev,
+    // even when `experimental.appManifest` is disabled.
+    resolve: {
+      alias: {
+        "#app-manifest": path.resolve(__dirname, "lib/app-manifest.stub.ts"),
+      },
+    },
+    optimizeDeps: {
+      exclude: ["#app-manifest"],
+    },
+  },
   app: {
     head: {
       title: "Ruina.team",
@@ -91,9 +105,7 @@ export default defineNuxtConfig({
       dir: "dist",
     },
     prerender: {
-      routes: Array.from(
-        new Set(["/", "/guides", "/modpacks", ...contentRoutes]),
-      ),
+      routes: Array.from(new Set(["/", "/guides", "/modpacks", ...contentRoutes])),
       crawlLinks: true,
     },
   },
