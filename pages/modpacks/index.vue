@@ -17,27 +17,27 @@ const modpacks = computed(() =>
 
 <template>
   <main class="site-page modpacks-page">
-    <header class="page-intro">
-      <p class="eyebrow">modpacks/</p>
+    <header class="page-intro modpacks-header">
       <h1 class="section-title">
-        {{ modpacksIntro?.title || "Модпаки" }}
+        {{ modpacksIntro?.title || "Сборки" }}
       </h1>
       <p class="muted">
-        {{ modpacksIntro?.description || "Здесь будут модпак-гайды и инструкции по установке." }}
+        {{ modpacksIntro?.description || "Каталог сборок и связанных инструкций." }}
       </p>
     </header>
 
-    <div v-if="modpacks.length" class="card-grid">
-      <NuxtLink v-for="item in modpacks" :key="item._path" :to="item._path" class="card">
-        <h3>{{ item.title }}</h3>
-        <p>{{ item.description }}</p>
+    <div v-if="modpacks.length" class="modpacks-list">
+      <NuxtLink v-for="item in modpacks" :key="item._path" :to="item._path" class="modpack-link">
+        <span class="modpack-title">{{ item.title }}</span>
+        <span class="modpack-description">{{ item.description }}</span>
       </NuxtLink>
     </div>
 
-    <section v-else class="surface-panel surface-panel--padded empty-state">
+    <section v-else class="empty-state">
+      <h2>Пока пусто</h2>
       <p>
-        Отдельные страницы модпаков пока не добавлены. Когда они появятся в `content/modpacks/`,
-        список соберётся автоматически.
+        Отдельные страницы модпаков ещё не добавлены. Когда они появятся в `content/modpacks/`,
+        список соберётся автоматически без дополнительной настройки.
       </p>
     </section>
   </main>
@@ -48,22 +48,61 @@ const modpacks = computed(() =>
   gap: 18px;
 }
 
-.eyebrow {
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--color-brand-accent-1);
-  font-size: 12px;
-  font-weight: 700;
-  margin: 0;
+.modpacks-header {
+  max-width: 680px;
 }
 
 .muted {
   margin: 0;
   color: var(--color-text-2);
+  line-height: 1.6;
+}
+
+.modpacks-list {
+  display: grid;
+  gap: 10px;
+}
+
+.modpack-link {
+  display: grid;
+  gap: 4px;
+  padding: 16px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: inherit;
+  transition:
+    border-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.modpack-link:hover {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.modpack-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.modpack-description {
+  color: var(--color-text-2);
+  line-height: 1.5;
+}
+
+.empty-state {
+  padding: 8px 0 0;
+}
+
+.empty-state h2 {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
 }
 
 .empty-state p {
+  max-width: 720px;
   margin: 0;
   color: var(--color-text-2);
+  line-height: 1.6;
 }
 </style>

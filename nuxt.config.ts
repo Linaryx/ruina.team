@@ -38,7 +38,7 @@ export default defineNuxtConfig({
   compatibilityDate: "2026-01-28",
   buildDir: ".cache/nuxt",
   modules: ["@nuxt/content"],
-  css: ["~/assets/css/tokens.css", "~/assets/css/base.css"],
+  css: ["~/assets/css/tokens.css", "~/assets/css/base.css", "~/assets/css/loading.css"],
   vite: {
     // Work around Vite resolving Nuxt's optional `#app-manifest` virtual module in dev,
     // even when `experimental.appManifest` is disabled.

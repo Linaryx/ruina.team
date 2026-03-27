@@ -34,4 +34,11 @@
   /* Shadows */
   --shadow-soft: 0 10px 24px rgba(0, 0, 0, 0.18);
   --shadow-strong: 0 14px 32px rgba(0, 0, 0, 0.22);
+
+  /* Motion */
+  --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-soft: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --duration-fast: 180ms;
+  --duration-base: 320ms;
+  --duration-slow: 520ms;
 }

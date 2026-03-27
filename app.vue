@@ -1,42 +1,58 @@
 <script setup lang="ts">
+const criticalAssets = ["/bg.webp", "/ruines.webp", "/loading-emote.webp"] as const;
+const loadingEmoteSrc = criticalAssets[2];
+
 const route = useRoute();
 const isHome = computed(() => route.path === "/");
 const isChatTiers = computed(() => route.path.startsWith("/chat-tiers"));
+const isLoading = ref(true);
 
-const navRef = ref<{ el: HTMLElement | null } | null>(null);
-const navHeight = ref(0);
-let observer: ResizeObserver | null = null;
+onMounted(async () => {
+  await Promise.all([waitForMinimumLoad(), preloadCriticalAssets()]);
+  isLoading.value = false;
+});
 
-const updateNavHeight = () => {
-  const el = navRef.value?.el;
-  if (!el) return;
-  navHeight.value = el.getBoundingClientRect().height;
-};
+function waitForMinimumLoad() {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, 1300);
+  });
+}
 
-onMounted(() => {
-  const el = navRef.value?.el;
-  if (el) {
-    updateNavHeight();
-    observer = new ResizeObserver(updateNavHeight);
-    observer.observe(el);
+async function preloadCriticalAssets() {
+  const tasks: Promise<unknown>[] = criticalAssets.map((src) => preloadImage(src));
+
+  if (typeof document !== "undefined" && document.fonts?.ready) {
+    tasks.push(document.fonts.ready);
   }
-});
 
-onBeforeUnmount(() => {
-  observer?.disconnect();
-});
+  await Promise.allSettled(tasks);
+}
+
+function preloadImage(src: string) {
+  return new Promise<void>((resolve) => {
+    const image = new Image();
+    image.onload = () => resolve();
+    image.onerror = () => resolve();
+    image.src = src;
+
+    if (image.complete) {
+      resolve();
+    }
+  });
+}
 </script>
 
 <template>
-  <div
-    class="site"
-    :class="{ 'is-home': isHome, 'is-chat-tiers': isChatTiers }"
-    :style="{ '--nav-height': `${navHeight}px` }"
-  >
-    <div class="site-bg" aria-hidden="true"></div>
-    <NavBar ref="navRef" :hero="isHome" />
-    <div :class="['shell', { 'shell--full': isHome }]">
-      <NuxtPage />
+  <div>
+    <LoadingScreen :visible="isLoading" :emote-src="loadingEmoteSrc" />
+    <div class="app-stage" :class="{ 'app-stage--ready': !isLoading }">
+      <div class="site" :class="{ 'is-home': isHome, 'is-chat-tiers': isChatTiers }">
+        <div class="site-bg" aria-hidden="true"></div>
+        <NavBar :hero="isHome" />
+        <div :class="['shell', { 'shell--full': isHome }]">
+          <NuxtPage />
+        </div>
+      </div>
     </div>
   </div>
 </template>

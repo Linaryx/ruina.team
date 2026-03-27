@@ -68,15 +68,17 @@ body,
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: url("~/assets/img/bg.webp") center / cover no-repeat;
+  background: url("/bg.webp") center / cover no-repeat;
   filter: brightness(0.45);
 }
 
+.site:not(.is-home) .site-bg {
+  display: none;
+}
+
 .nav {
-  position: fixed;
+  position: sticky;
   top: 16px;
-  left: 50%;
-  transform: translateX(-50%);
   z-index: 20;
   display: flex;
   align-items: center;
@@ -85,13 +87,20 @@ body,
   min-height: 60px;
   padding: 10px 18px;
   width: min(1080px, calc(100% - 24px));
-  margin: 0 auto;
+  margin: 16px auto 0;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(10, 10, 12, 0.58);
   border-radius: 18px;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+}
+
+.nav--floating {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 0;
 }
 
 .nav a {
@@ -151,8 +160,8 @@ body,
   letter-spacing: 0.01em;
   color: rgba(255, 255, 255, 0.82);
   transition:
-    color 0.12s ease,
-    transform 0.12s ease;
+    color var(--duration-fast) var(--ease-smooth),
+    transform var(--duration-fast) var(--ease-smooth);
 }
 
 .nav-links a::after {
@@ -162,12 +171,17 @@ body,
   right: 10px;
   bottom: 4px;
   height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.86), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.86),
+    transparent
+  );
   opacity: 0;
   transform: scaleX(0.65);
   transition:
-    opacity 0.12s ease,
-    transform 0.12s ease;
+    opacity var(--duration-fast) var(--ease-smooth),
+    transform var(--duration-fast) var(--ease-smooth);
 }
 
 .nav-links a:hover {
@@ -201,7 +215,7 @@ body,
 }
 
 .site:not(.is-home) .shell {
-  padding-top: calc(var(--nav-height, 0px) + 32px);
+  padding-top: 24px;
   padding-bottom: 64px;
 }
 
@@ -277,11 +291,11 @@ body,
   font-weight: 700;
   letter-spacing: -0.01em;
   transition:
-    transform 0.12s ease,
-    box-shadow 0.12s ease,
-    border-color 0.12s ease,
-    color 0.12s ease,
-    background 0.12s ease;
+    transform var(--duration-fast) var(--ease-smooth),
+    box-shadow var(--duration-fast) var(--ease-smooth),
+    border-color var(--duration-fast) var(--ease-smooth),
+    color var(--duration-fast) var(--ease-smooth),
+    background var(--duration-fast) var(--ease-smooth);
 }
 
 .btn-primary {
@@ -326,9 +340,9 @@ body,
   border-radius: var(--radius-card);
   padding: 16px 18px;
   transition:
-    transform 0.12s ease,
-    box-shadow 0.12s ease,
-    border-color 0.12s ease;
+    transform var(--duration-fast) var(--ease-smooth),
+    box-shadow var(--duration-fast) var(--ease-smooth),
+    border-color var(--duration-fast) var(--ease-smooth);
 }
 
 .card:hover {
@@ -378,6 +392,7 @@ body,
     justify-content: flex-start;
     gap: 12px;
     padding: 12px 14px;
+    margin-top: 12px;
   }
 
   .nav-brand {
@@ -407,7 +422,7 @@ body,
   }
 
   .site:not(.is-home) .shell {
-    padding-top: calc(var(--nav-height, 0px) + 24px);
+    padding-top: 20px;
     padding-bottom: 40px;
   }
 }

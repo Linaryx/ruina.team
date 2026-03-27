@@ -1,11 +1,9 @@
 <script setup lang="ts">
 const props = defineProps<{ hero?: boolean }>();
-const navEl = ref<HTMLElement | null>(null);
-defineExpose({ el: navEl });
 </script>
 
 <template>
-  <header ref="navEl" :class="['nav', { 'nav--hero': props.hero }]">
+  <header :class="['nav', { 'nav--hero': props.hero, 'nav--floating': props.hero }]">
     <NuxtLink class="nav-brand" to="/">
       <span class="brand">
         <span class="brand-icon" aria-hidden="true"></span>
