@@ -39,15 +39,13 @@ const cards = computed(() =>
 </script>
 
 <template>
-  <main class="guides-page">
-    <header class="guides-header">
-      <div>
-        <p class="eyebrow">guides.md</p>
-        <h1 class="section-title">Гайды и инструкции</h1>
-        <p class="muted">
-          Здесь собраны гайды на все случаи жизни. Кликните по карточке, чтобы открыть страницу.
-        </p>
-      </div>
+  <main class="site-page guides-page">
+    <header class="page-intro guides-header">
+      <p class="eyebrow">guides.md</p>
+      <h1 class="section-title">Гайды и инструкции</h1>
+      <p class="muted">
+        Здесь собраны гайды на все случаи жизни. Кликните по карточке, чтобы открыть страницу.
+      </p>
     </header>
 
     <div v-if="cards.length" class="guides-list">
@@ -96,15 +94,6 @@ const cards = computed(() =>
 </template>
 
 <style scoped>
-.guides-page {
-  margin-top: 4em;
-  padding: 0 0 64px;
-}
-
-.guides-header {
-  margin-bottom: 18px;
-}
-
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -124,8 +113,7 @@ const cards = computed(() =>
 }
 
 .guides-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 14px;
 }
 
@@ -139,6 +127,16 @@ const cards = computed(() =>
   border-radius: 18px;
   box-shadow: var(--shadow-soft);
   color: inherit;
+  transition:
+    border-color 0.12s ease,
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.guide-row:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-strong);
 }
 
 .guide-thumb {
@@ -270,6 +268,18 @@ const cards = computed(() =>
 
   .guide-updated {
     text-align: left;
+  }
+}
+
+@media (max-width: 640px) {
+  .guide-row {
+    grid-template-columns: 1fr;
+  }
+
+  .guide-thumb {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
   }
 }
 </style>

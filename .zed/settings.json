@@ -1,0 +1,60 @@
+// Folder-specific settings
+//
+// For a full list of overridable settings, and general information on folder-specific settings,
+// see the documentation: https://zed.dev/docs/configuring-zed#settings-files
+{
+  "tab_size": 2,
+  "hard_tabs": false,
+  "format_on_save": "on",
+  "ensure_final_newline_on_save": true,
+  "remove_trailing_whitespace_on_save": true,
+  "file_scan_exclusions": [
+    "**/.git",
+    "**/.svn",
+    "**/.hg",
+    "**/.jj",
+    "**/CVS",
+    "**/.DS_Store",
+    "**/Thumbs.db",
+    "**/.classpath",
+    "**/.settings",
+    "**/node_modules",
+    "**/.cache",
+    "**/.nuxt",
+    "**/dist",
+  ],
+  "languages": {
+    "JavaScript": {
+      "formatter": {
+        "external": {
+          "command": "bun",
+          "arguments": ["x", "oxfmt", "--stdin-filepath", "{buffer_path}"],
+        },
+      },
+    },
+    "TypeScript": {
+      "formatter": {
+        "external": {
+          "command": "bun",
+          "arguments": ["x", "oxfmt", "--stdin-filepath", "{buffer_path}"],
+        },
+      },
+    },
+    "JSON": {
+      "formatter": {
+        "external": {
+          "command": "bun",
+          "arguments": ["x", "oxfmt", "--stdin-filepath", "{buffer_path}"],
+        },
+      },
+    },
+    "Vue.js": {
+      "formatter": {
+        "external": {
+          "command": "bun",
+          "arguments": ["x", "oxfmt", "--stdin-filepath", "{buffer_path}"],
+        },
+      },
+    },
+  },
+}

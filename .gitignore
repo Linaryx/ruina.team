@@ -1,4 +1,5 @@
 .nuxt
+.cache
 .output
 .nitro
 node_modules

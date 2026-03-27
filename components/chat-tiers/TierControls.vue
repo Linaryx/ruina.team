@@ -26,12 +26,14 @@
     <label>
       <span>Год</span>
       <select v-model.number="local.year">
-        <option v-for="y in yearOptions" :key="y" :value="y">{{ y }}</option>
+        <option v-for="y in yearOptions" :key="y" :value="y">
+          {{ y }}
+        </option>
       </select>
     </label>
 
     <label v-if="local.scope !== 'year'">
-      <span>Month</span>
+      <span>Месяц</span>
       <select v-model.number="local.month">
         <option v-for="m in monthOptions" :key="m.value" :value="m.value">
           {{ m.label }}
@@ -77,9 +79,9 @@ const emit = defineEmits<{
 }>();
 
 const modeOptions: { label: string; value: Mode }[] = [
-  { label: "All", value: "all" as Mode },
-  { label: "Online", value: "online" as Mode },
-  { label: "Offline", value: "offline" as Mode },
+  { label: "Все", value: "all" as Mode },
+  { label: "Онлайн", value: "online" as Mode },
+  { label: "Оффлайн", value: "offline" as Mode },
 ];
 const scopeOptions = computed<{ label: string; value: Scope }[]>(() => {
   const avail =
@@ -88,7 +90,7 @@ const scopeOptions = computed<{ label: string; value: Scope }[]>(() => {
       : (["year", "month"] as Scope[]);
   return avail.map((s) => ({
     value: s,
-    label: s === "year" ? "Year" : "Month",
+    label: s === "year" ? "Год" : "Месяц",
   }));
 });
 const modeOptionsComputed = computed(() => {
@@ -96,7 +98,7 @@ const modeOptionsComputed = computed(() => {
   const base = avail || (["all", "online", "offline"] as Mode[]);
   return base.map((m: Mode) => ({
     value: m,
-    label: m === "all" ? "All" : m === "online" ? "Online" : "Offline",
+    label: m === "all" ? "Все" : m === "online" ? "Онлайн" : "Оффлайн",
   }));
 });
 
@@ -162,7 +164,10 @@ const monthOptions = computed(() => {
   if (avail.length) {
     return avail.map((m) => {
       const base = defaultMonthOptions.find((o) => o.value === m);
-      return { value: m, label: base ? base.label : m.toString().padStart(2, "0") };
+      return {
+        value: m,
+        label: base ? base.label : m.toString().padStart(2, "0"),
+      };
     });
   }
   return defaultMonthOptions;
@@ -198,11 +203,12 @@ watch(
 .controls input,
 .controls select {
   background: var(--color-bg);
-  border: 1px solid #2d2d2d;
+  border: 1px solid var(--color-border-strong);
   color: #fff;
   border-radius: 10px;
   padding: 10px 12px;
   appearance: none;
+  min-width: 0;
 }
 .controls select {
   cursor: pointer;
@@ -210,5 +216,11 @@ watch(
 .controls .btn {
   align-self: end;
   height: 42px;
+}
+
+@media (max-width: 640px) {
+  .controls {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

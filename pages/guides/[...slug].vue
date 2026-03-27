@@ -41,7 +41,7 @@ const formatDate = (value?: string | number | Date | null) => {
   return d.toLocaleDateString("ru-RU");
 };
 
-const tagColor = (index: number) => `tag-${(index % 3) + 1}`;
+const tagColor = (index: string | number) => `tag-${(Number(index) % 3) + 1}`;
 
 const bodyRef = ref<HTMLElement | null>(null);
 const applyAnchorClasses = () => {
@@ -62,7 +62,7 @@ watch(
 </script>
 
 <template>
-  <main class="guide-page" v-if="guide">
+  <main class="site-page guide-page" v-if="guide">
     <header class="guide-hero">
       <div class="hero-cover">
         <img :src="guide.image_url || '/favicon.svg'" :alt="guide.title" />
@@ -105,7 +105,7 @@ watch(
       </div>
     </header>
 
-    <section class="guide-body card" ref="bodyRef">
+    <section class="guide-body surface-panel surface-panel--padded" ref="bodyRef">
       <ContentRenderer :value="guide" />
     </section>
 
@@ -120,8 +120,8 @@ watch(
     </footer>
   </main>
 
-  <main v-else class="guide-page">
-    <section class="empty-state card">
+  <main v-else class="site-page guide-page">
+    <section class="empty-state surface-panel surface-panel--padded">
       <h2>Гайд не найден</h2>
       <p>Проверьте путь или добавьте MD-файл в content/guides/.</p>
       <NuxtLink to="/guides" class="btn primary">Вернуться к списку</NuxtLink>
@@ -130,14 +130,6 @@ watch(
 </template>
 
 <style scoped>
-.guide-page {
-  margin-top: 4em;
-  padding: 0 0 64px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
 .guide-hero {
   display: grid;
   grid-template-columns: 200px 1fr;
@@ -257,10 +249,7 @@ watch(
 }
 
 .guide-body {
-  background: var(--color-bg3);
-  border: 1px solid var(--color-border);
-  border-radius: 18px;
-  padding: 16px;
+  min-width: 0;
 }
 
 .guide-body :deep(h1),
@@ -273,6 +262,23 @@ watch(
 .guide-body :deep(p) {
   color: var(--color-text-2);
   line-height: 1.6;
+}
+
+.guide-body :deep(ul),
+.guide-body :deep(ol),
+.guide-body :deep(blockquote) {
+  color: var(--color-text-2);
+}
+
+.guide-body :deep(ul),
+.guide-body :deep(ol) {
+  padding-left: 1.25rem;
+}
+
+.guide-body :deep(blockquote) {
+  margin: 16px 0;
+  padding-left: 16px;
+  border-left: 3px solid var(--color-border-strong);
 }
 
 .guide-body :deep(code) {
@@ -315,14 +321,11 @@ watch(
   margin: 12px 0;
 }
 
-.card:hover {
-  transform: none;
-}
-
 .guide-nav {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .guide-nav .spacer {
@@ -358,10 +361,6 @@ watch(
 }
 
 .empty-state {
-  background: var(--color-bg3);
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  padding: 16px 18px;
   display: grid;
   gap: 8px;
 }
@@ -374,6 +373,17 @@ watch(
   .hero-cover {
     width: 160px;
     height: 160px;
+  }
+}
+
+@media (max-width: 640px) {
+  .guide-nav {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .guide-nav .spacer {
+    display: none;
   }
 }
 </style>

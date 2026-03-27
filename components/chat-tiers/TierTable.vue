@@ -92,7 +92,7 @@
 <script setup lang="ts">
 import type { TierEntry } from "~/types/tiers";
 import { normalizeColor, tierTextColor } from "~/constants/tiers";
-import { buildScoredEntry, windowMultipliers } from "~/lib/score";
+import { sortScoredEntries, windowMultipliers } from "~/lib/score";
 const wrapEl = ref<HTMLElement | null>(null);
 const sentinelEl = ref<HTMLElement | null>(null);
 
@@ -114,9 +114,7 @@ const formatPoints = (count: number, key: keyof typeof windowMultipliers) => {
   return points % 1 === 0 ? `${points}` : points.toFixed(0);
 };
 
-const scoredEntries = computed(() =>
-  [...props.entries].map(buildScoredEntry).sort((a, b) => b.score - a.score),
-);
+const scoredEntries = computed(() => sortScoredEntries(props.entries));
 
 const tierTextStyle = (tier?: string) => {
   if (!tier) return {};
@@ -144,10 +142,13 @@ const tierBorderStyle = (tier?: string) => {
 <style scoped>
 .table-wrap {
   overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
 }
 
 table {
   width: 100%;
+  min-width: 680px;
   border-collapse: collapse;
   font-size: 14px;
   color: #fff;
@@ -164,7 +165,8 @@ th {
   font-weight: 600;
   position: sticky;
   top: 0;
-  background: #0c0c0c;
+  background: rgba(12, 12, 12, 0.98);
+  backdrop-filter: blur(6px);
 }
 
 tr:hover td {
@@ -258,5 +260,11 @@ tr:hover td {
   font-weight: 700;
   border: 1px solid red;
   /* color: #ffd700; */
+}
+
+@media (max-width: 640px) {
+  .table-wrap {
+    margin-inline: -4px;
+  }
 }
 </style>

@@ -7,12 +7,13 @@ import TierTable from "~/components/chat-tiers/TierTable.vue";
 import UserCard from "~/components/chat-tiers/UserCard.vue";
 import LoadingBar from "~/components/chat-tiers/LoadingBar.vue";
 import { useRoles } from "~/composables/useRoles";
-import { defaultTierColors, tierRanges } from "~/constants/tiers";
+import { defaultTierColors } from "~/constants/tiers";
 import {
   fetchAvailableChannels,
   fetchAvailablePeriods,
   fetchTiersSupabase as fetchTiers,
 } from "~/lib/api";
+import { sortScoredEntries } from "~/lib/score";
 import type { Mode, Scope, TierEntry, TierResponse } from "~/types/tiers";
 
 const channel = ref("zakvielchannel");
@@ -41,7 +42,11 @@ type IvrUser = {
   logo?: string;
   followers?: number | null;
   createdAt?: string;
-  roles?: { isAffiliate?: boolean; isPartner?: boolean; isStaff?: boolean | null };
+  roles?: {
+    isAffiliate?: boolean;
+    isPartner?: boolean;
+    isStaff?: boolean | null;
+  };
 };
 
 type Relation = { followedAt?: string; subMonths?: number; subEnd?: string };
@@ -57,7 +62,10 @@ const showProfile = ref(false);
 
 const tierColors = reactive<Record<string, string>>({ ...defaultTierColors });
 const prefetchIndex = ref(0);
-const tableRef = ref<{ wrapEl: HTMLElement | null; sentinelEl: HTMLElement | null } | null>(null);
+const tableRef = ref<{
+  wrapEl: HTMLElement | null;
+  sentinelEl: HTMLElement | null;
+} | null>(null);
 let prefetchObserver: IntersectionObserver | null = null;
 let scrollEl: HTMLElement | null = null;
 let isPrefetching = false;
@@ -118,7 +126,11 @@ const fetchProfiles = async (ids: string[]) => {
         `https://api.ivr.fi/v2/twitch/user?id=${chunk.join(",")}`,
       );
       res.forEach((u) => {
-        profiles[u.id] = { displayName: u.displayName, login: u.login, logo: u.logo };
+        profiles[u.id] = {
+          displayName: u.displayName,
+          login: u.login,
+          logo: u.logo,
+        };
       });
     } catch {
       /* ignore */
@@ -352,7 +364,9 @@ watch(
   () => data.value?.entries,
   async (entries: TierEntry[] | undefined) => {
     if (!entries) return;
-    const topIds = entries.slice(0, 50).map((e) => e.userId);
+    const topIds = sortScoredEntries(entries)
+      .slice(0, 50)
+      .map((entry) => entry.userId);
     await fetchProfiles(topIds);
     await fetchRelations(topIds);
     setupPrefetchObserver();
@@ -401,8 +415,8 @@ watch(
 
 const prefetchMoreProfiles = async () => {
   if (isPrefetching) return;
-  if (!data.value?.entries?.length) return;
-  const entries = data.value.entries;
+  if (!rankedEntries.value.length) return;
+  const entries = rankedEntries.value;
   const start = 50 + prefetchIndex.value * 25;
   if (start >= entries.length) return;
   isPrefetching = true;
@@ -467,14 +481,18 @@ const periodText = computed(() => {
   return [y, m].filter(Boolean).join("/");
 });
 
+const rankedEntries = computed(() =>
+  data.value?.entries ? sortScoredEntries(data.value.entries) : [],
+);
+
 const selectedEntry = computed(() => {
   if (!data.value || !userData.value) return null;
   return data.value.entries.find((e: TierEntry) => e.userId === userData.value?.id) || null;
 });
 
 const selectedRank = computed(() => {
-  if (!data.value || !userData.value) return null;
-  const idx = data.value.entries.findIndex((e) => e.userId === userData.value?.id);
+  if (!userData.value) return null;
+  const idx = rankedEntries.value.findIndex((entry) => entry.userId === userData.value?.id);
   return idx >= 0 ? idx : null;
 });
 
@@ -498,7 +516,7 @@ const errorText = computed(() => {
 </script>
 
 <template>
-  <main class="page">
+  <main class="site-page tiers-page surface-panel surface-panel--padded">
     <header class="header">
       <div>
         <h1>Рейтинг пользователей чата</h1>
@@ -571,25 +589,6 @@ const errorText = computed(() => {
         :unique="data.totalUniqueMessages"
       />
 
-      <div class="tier-grid">
-        <div class="tier-group" v-for="idx in 5" :key="idx">
-          <div class="tier-chip">
-            <span class="chip-color" :style="{ background: tierColors[`HT${idx}`] }" />
-            <div class="chip-meta">
-              <span class="chip-label">HT{{ idx }}</span>
-              <span class="range">{{ tierRanges[`HT${idx}`] }}</span>
-            </div>
-          </div>
-          <div class="tier-chip">
-            <span class="chip-color" :style="{ background: tierColors[`LT${idx}`] }" />
-            <div class="chip-meta">
-              <span class="chip-label">LT{{ idx }}</span>
-              <span class="range">{{ tierRanges[`LT${idx}`] }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <TierTable
         ref="tableRef"
         :entries="data.entries"
@@ -619,22 +618,18 @@ const errorText = computed(() => {
 </template>
 
 <style scoped>
-.page {
-  min-width: 60vw;
-  margin-top: 5em;
-  padding: 32px 20px 64px;
-  background: var(--color-bg3);
-  border-radius: 1em;
-  border: 1px solid var(--color-border);
-  backdrop-filter: blur(10px);
+.tiers-page {
   width: 100%;
+  min-width: 0;
+  backdrop-filter: blur(10px);
 }
 
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .eyebrow {
@@ -653,7 +648,7 @@ h1 {
 
 .muted {
   margin: 0;
-  color: #ffffff;
+  color: var(--color-text-2);
 }
 
 .pill {
@@ -669,9 +664,9 @@ h1 {
 }
 
 .card {
-  margin-top: 1em;
-  background: var(--color-bg2);
-  border: 1px solid #161616;
+  margin-top: 0;
+  background: rgba(11, 11, 14, 0.82);
+  border: 1px solid var(--color-border);
   border-radius: 14px;
   padding: 16px;
 }
@@ -695,10 +690,11 @@ h1 {
 }
 
 .lookup-row input {
-  flex: 1;
-  background: #0b0b0b;
-  border: 1px solid #2d2d2d;
-  color: #ffffff;
+  flex: 1 1 240px;
+  min-width: 0;
+  background: rgba(11, 11, 11, 0.92);
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text-1);
   border-radius: 12px;
   padding: 10px 12px;
 }
@@ -718,9 +714,9 @@ h1 {
   text-decoration: none;
   font-weight: 700;
   transition: all 0.15s ease;
-  border: 1px solid #2d2d2d;
-  background: #0a0a0a;
-  color: #ffffff;
+  border: 1px solid var(--color-border-strong);
+  background: rgba(10, 10, 10, 0.92);
+  color: var(--color-text-1);
   box-shadow: none;
 }
 
@@ -758,45 +754,6 @@ h1 {
 .error-text {
   color: #fca5a5;
   margin: 0;
-}
-
-.tier-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.tier-group {
-  display: grid;
-  gap: 6px;
-}
-
-.tier-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  background: #0b0b0e;
-  border: 1px solid #2d2d2d;
-  border-radius: 12px;
-}
-
-.chip-color {
-  width: 16px;
-  height: 16px;
-  border-radius: 6px;
-}
-
-.chip-meta {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.1;
-}
-
-.range {
-  font-size: 12px;
-  color: #cbd5e1;
 }
 
 .profile-mini {
@@ -871,5 +828,28 @@ h1 {
 .muted a:focus,
 .muted a:hover {
   text-decoration: underline;
+}
+
+@media (max-width: 900px) {
+  .tiers-page {
+    padding: 16px;
+  }
+
+  h1 {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 640px) {
+  .lookup-row,
+  .profile-mini {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn,
+  .btn.primary.refresh-btn {
+    width: 100%;
+  }
 }
 </style>

@@ -38,3 +38,10 @@ export const buildScoredEntry = (row: TierEntry) => {
     chatScore: chatScore(row),
   };
 };
+
+export const sortScoredEntries = (entries: TierEntry[]) =>
+  [...entries]
+    .map(buildScoredEntry)
+    .sort(
+      (a, b) => b.score - a.score || b.messages - a.messages || a.userId.localeCompare(b.userId),
+    );

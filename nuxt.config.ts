@@ -36,6 +36,7 @@ const contentRoutes = collectContentRoutes(contentDir);
 export default defineNuxtConfig({
   // Lock behavior of presets/modules (Nitro, etc.) to avoid unexpected changes.
   compatibilityDate: "2026-01-28",
+  buildDir: ".cache/nuxt",
   modules: ["@nuxt/content"],
   css: ["~/assets/css/tokens.css", "~/assets/css/base.css"],
   vite: {

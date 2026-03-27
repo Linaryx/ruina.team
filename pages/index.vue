@@ -1,50 +1,52 @@
 <template>
   <main class="home" :class="{ 'is-ready': isReady }">
     <section class="hero">
-      <div class="hero-overlay"></div>
+      <div class="hero-overlay" aria-hidden="true"></div>
+      <div class="hero-noise" aria-hidden="true"></div>
+      <div class="hero-fade" aria-hidden="true"></div>
+
       <div class="hero-inner">
-        <h1>
-          RUINA
-          <br />
-          TEAM
-        </h1>
+        <div class="hero-wordmark" aria-hidden="true">
+          <span>RUINA</span>
+          <span>TEAM</span>
+        </div>
       </div>
     </section>
 
-    <footer class="footer">
-      <div class="footer-card">
-        <div class="footer-inner">
-          <h2>Кто мы?</h2>
-          <p class="footer-text">
-            Команда людей, которым не всё равно. Делаем гайды, модпаки и инструменты для стримеров и
-            их сообщества.
-          </p>
-
-          <div class="footer-actions">
-            <a class="action" href="mailto:contact@ruina.team">
-              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path
-                  fill="currentColor"
-                  d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Zm0 2v.01L12 13 4 6.01V6h16ZM4 18V8.24l7.4 6.17a2 2 0 0 0 2.4 0L20 8.24V18H4Z"
-                />
-              </svg>
-              <span>contact@ruina.team</span>
-            </a>
-            <a
-              class="action"
-              href="https://github.com/Linaryx/linaryx.github.io"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path
-                  fill="currentColor"
-                  d="M12 .5a11.5 11.5 0 0 0-3.64 22.4c.58.1.79-.26.79-.56v-2.1c-3.22.7-3.9-1.37-3.9-1.37-.52-1.3-1.28-1.64-1.28-1.64-1.05-.7.08-.69.08-.69 1.16.08 1.77 1.17 1.77 1.17 1.03 1.74 2.7 1.23 3.36.94.1-.73.4-1.23.72-1.51-2.57-.29-5.27-1.26-5.27-5.62 0-1.24.46-2.25 1.2-3.05-.12-.29-.52-1.46.12-3.04 0 0 .98-.31 3.2 1.17a11.2 11.2 0 0 1 5.82 0c2.22-1.48 3.2-1.17 3.2-1.17.64 1.58.24 2.75.12 3.04.74.8 1.2 1.81 1.2 3.05 0 4.37-2.7 5.33-5.28 5.62.41.35.78 1.04.78 2.1v3.1c0 .3.21.66.8.55A11.5 11.5 0 0 0 12 .5Z"
-                />
-              </svg>
-              <span>GitHub</span>
-            </a>
-          </div>
+    <footer class="home-footer">
+      <div class="home-footer-inner">
+        <p class="home-footer-brand">ruina.team {{ currentYear }}</p>
+        <div class="home-footer-links">
+          <a
+            class="home-footer-link"
+            href="https://github.com/Linaryx/ruina.team"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="GitHub"
+            title="GitHub"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M12 .5a12 12 0 0 0-3.79 23.39c.6.11.82-.26.82-.58v-2.03c-3.34.73-4.04-1.42-4.04-1.42-.54-1.38-1.33-1.75-1.33-1.75-1.09-.74.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.08 1.84 2.82 1.31 3.5 1 .11-.78.42-1.31.77-1.61-2.66-.3-5.47-1.33-5.47-5.9 0-1.3.46-2.36 1.23-3.19-.13-.3-.53-1.52.11-3.17 0 0 1-.32 3.3 1.22a11.4 11.4 0 0 1 6 0c2.29-1.54 3.29-1.22 3.29-1.22.65 1.65.24 2.87.12 3.17.76.83 1.22 1.89 1.22 3.19 0 4.58-2.81 5.6-5.49 5.9.43.37.82 1.1.82 2.22v3.29c0 .32.21.7.83.58A12 12 0 0 0 12 .5Z"
+              />
+            </svg>
+          </a>
+          <a
+            class="home-footer-link"
+            href="https://t.me/linaryx"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Telegram"
+            title="Telegram"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M21.94 4.66a1.5 1.5 0 0 0-1.67-.24L2.96 11.8a1.5 1.5 0 0 0 .16 2.8l4.25 1.42 1.58 5.06a1.5 1.5 0 0 0 2.59.56l2.38-2.91 4.67 3.42a1.5 1.5 0 0 0 2.36-.88l2.96-15.1a1.5 1.5 0 0 0-.57-1.51Zm-3.52 4.03-7.57 6.91a.75.75 0 0 0-.22.38l-.63 2.9-.88-2.82 8.79-8.03a.75.75 0 1 0-1.01-1.1l-10.15 9.27-3.16-1.06 15.65-6.45-2.16 10.99-4.12-3.02a1.5 1.5 0 0 0-1.99.2l-1.13 1.38.39-1.8 7.21-6.58a.75.75 0 1 0-1.01-1.1Z"
+              />
+            </svg>
+          </a>
         </div>
       </div>
     </footer>
@@ -54,9 +56,8 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 
-// On hard refresh (F5) web fonts may apply after first paint, causing a visible "jump".
-// We start the hero animation only after fonts are ready (or after a short timeout).
 const isReady = ref(false);
+const currentYear = new Date().getFullYear();
 
 onMounted(() => {
   const start = () => {
@@ -80,193 +81,185 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* ===== PAGE ===== */
-
 .home {
-  background: transparent;
-  display: flex;
-  flex-direction: column;
+  min-height: 100vh;
   min-height: 100dvh;
+  background: #060708;
 }
-
-/* ===== HERO ===== */
 
 .hero {
   position: relative;
-  width: 100%;
-  flex: 1 1 auto;
-  /* grow to take remaining space */
-  min-height: 0;
-  /* allow flex child to shrink if needed */
-  margin: 0;
-  border-radius: 0;
+  min-height: calc(100vh - 84px);
+  min-height: calc(100dvh - 84px);
+  padding: clamp(104px, 12vh, 144px) clamp(20px, 5vw, 56px) clamp(64px, 10vh, 120px);
   overflow: hidden;
-  border: none;
-  box-shadow: none;
   background: url("~/assets/img/bg.webp") center / cover no-repeat;
 }
-
-/* ===== TITLE ===== */
 
 .hero-overlay {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(9, 9, 11, 0.01) 0%, rgba(9, 9, 11, 0.3) 100%),
-    url("~/assets/img/ruines.webp") center bottom / min(1400px, 100%) no-repeat;
-  transform: translateY(50px);
-  will-change: transform;
+    radial-gradient(circle at 50% 34%, rgba(188, 222, 226, 0.18), transparent 32%),
+    linear-gradient(180deg, rgba(5, 7, 8, 0.18), rgba(5, 7, 8, 0.5)),
+    url("~/assets/img/ruines.webp") center bottom / min(1420px, 94%) no-repeat;
   opacity: 0;
-  animation: none;
+  transform: translateY(36px) scale(1.02);
+}
+
+.hero-noise {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 18% 36%, rgba(173, 216, 230, 0.18), transparent 24%),
+    radial-gradient(circle at 72% 26%, rgba(152, 187, 192, 0.14), transparent 20%),
+    linear-gradient(180deg, rgba(6, 8, 9, 0.08), rgba(6, 8, 9, 0.28));
+  mix-blend-mode: screen;
+  opacity: 0;
+}
+
+.hero-fade {
+  position: absolute;
+  inset: auto 0 0;
+  height: clamp(140px, 18vh, 220px);
+  background: linear-gradient(180deg, rgba(6, 7, 8, 0), rgba(6, 7, 8, 0.72) 54%, #070809 100%);
   z-index: 0;
-  /* sit behind the hero text */
 }
 
 .hero-inner {
   position: relative;
   z-index: 1;
-  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: calc(100vh - clamp(104px, 12vh, 144px) - 24px);
+  min-height: calc(100dvh - clamp(104px, 12vh, 144px) - 24px);
 }
 
-.hero-inner h1 {
-  margin: 0;
-  font-size: clamp(5rem, 20vw, 8rem);
-  line-height: 0.95;
-  font-weight: 900;
-  letter-spacing: -0.02em;
-  color: #ffffff;
+.hero-wordmark {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 0;
   text-align: center;
-  text-shadow: 0 0 16px rgba(255, 255, 255, 0.719);
-  /* start higher, then slide down on load */
-  transform: translateY(-150px);
-  will-change: transform;
+  font-size: clamp(5rem, 14vw, 10rem);
+  line-height: 0.88;
+  letter-spacing: -0.06em;
+  font-weight: 900;
+  color: #fff;
+  text-shadow:
+    0 0 24px rgba(255, 255, 255, 0.7),
+    0 0 60px rgba(180, 222, 230, 0.22);
+  transform: translateY(-95px);
   opacity: 0;
-  animation: none;
+}
+
+.home-footer {
+  position: relative;
+  z-index: 1;
+  background:
+    linear-gradient(180deg, rgba(7, 8, 9, 0.92), rgba(7, 8, 9, 0.98)), rgba(7, 8, 9, 0.98);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.home-footer-inner {
+  width: min(460px, calc(100% - 40px));
+  margin: 0 auto;
+  min-height: 84px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+}
+
+.home-footer-brand {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.88rem;
+  letter-spacing: 0.03em;
+}
+
+.home-footer-links {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.home-footer-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.68);
+  transition:
+    color 0.12s ease,
+    opacity 0.12s ease,
+    transform 0.12s ease;
+}
+
+.home-footer-link svg {
+  width: 18px;
+  height: 18px;
+}
+
+.home-footer-link:hover {
+  color: #ffffff;
+  transform: translateY(-1px);
 }
 
 .home.is-ready .hero-overlay {
   opacity: 1;
-  animation: ruin-slide 2.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  transform: translateY(0) scale(1);
+  transition:
+    opacity 0.9s ease,
+    transform 1.4s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.home.is-ready .hero-inner h1 {
+.home.is-ready .hero-noise {
   opacity: 1;
-  animation: hero-slide 2.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  transition: opacity 1.2s ease;
 }
 
-@keyframes hero-slide {
-  from {
-    transform: translateY(-150px);
-  }
+.home.is-ready .hero-wordmark {
+  opacity: 1;
+  transform: translateY(-90px);
+  transition:
+    opacity 0.8s ease 0.08s,
+    transform 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) 0.08s;
+}
 
-  to {
-    transform: translateY(-80px);
+@media (max-width: 1100px) {
+  .hero-wordmark {
+    transform: none;
+    font-size: clamp(4rem, 18vw, 8rem);
   }
 }
 
-@keyframes ruin-slide {
-  from {
-    transform: translateY(50px);
+@media (max-width: 700px) {
+  .hero {
+    min-height: calc(100vh - 76px);
+    min-height: calc(100dvh - 76px);
+    padding: calc(var(--nav-height, 72px) + 28px) 14px 56px;
   }
 
-  to {
-    transform: translateY(0);
+  .hero-inner {
+    min-height: calc(100vh - var(--nav-height, 72px) - 56px);
+    min-height: calc(100dvh - var(--nav-height, 72px) - 56px);
+  }
+
+  .home-footer-inner {
+    width: min(320px, calc(100% - 28px));
+    min-height: 76px;
+    gap: 14px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .hero-overlay,
-  .hero-inner h1 {
-    animation: none;
-    transform: none;
-    opacity: 1;
+  .hero-noise,
+  .hero-wordmark {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
   }
-}
-
-/* ===== MOBILE ===== */
-
-@media (max-width: 768px) {
-  .hero {
-    min-height: 60vh;
-  }
-
-  .hero-inner h1 {
-    font-size: clamp(3.4rem, 8vw, 6.8rem);
-  }
-}
-
-.footer {
-  position: relative;
-  z-index: 2;
-  background:
-    url("~/assets/img/bg.webp") center / cover no-repeat,
-    #0b0b0e;
-  margin-top: auto;
-  /* push footer to bottom when content is short */
-}
-
-.footer-card {
-  /* width: 100%; */
-  background: rgba(12, 12, 14, 0.92);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.footer-inner {
-  width: min(1080px, calc(100% - 32px));
-  margin: 0 auto;
-  padding: 10px 0;
-}
-
-.footer-card h2 {
-  margin: 0 0 10px;
-  font-size: 1.6rem;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-}
-
-.footer-text {
-  margin: 0 0 12px;
-  color: rgba(255, 255, 255, 0.78);
-  line-height: 1.6;
-}
-
-.footer-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 16px;
-}
-
-.action {
-  color: #ffffff;
-  font-weight: 700;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
-  transition:
-    background 0.12s ease,
-    border-color 0.12s ease,
-    transform 0.12s ease;
-}
-
-.icon {
-  width: 16px;
-  height: 16px;
-  display: inline-block;
-  flex: 0 0 auto;
-}
-
-.action:hover {
-  background: rgba(255, 255, 255, 0.09);
-  border-color: rgba(255, 255, 255, 0.18);
-  transform: translateY(-1px);
 }
 </style>
