@@ -342,14 +342,19 @@ const syncFromQuery = () => {
 };
 
 const pushQuery = () => {
+  const query: Record<string, string> = {
+    c: channel.value,
+    sc: scope.value,
+    y: String(year.value),
+    m: mode.value,
+  };
+
+  if (scope.value !== "year") {
+    query.mo = String(month.value);
+  }
+
   router.replace({
-    query: {
-      c: channel.value,
-      sc: scope.value,
-      y: String(year.value),
-      mo: String(month.value),
-      m: mode.value,
-    },
+    query,
   });
 };
 
