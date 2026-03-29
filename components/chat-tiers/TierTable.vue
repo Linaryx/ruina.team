@@ -65,7 +65,7 @@
             <div class="user">
               <img
                 class="avatar"
-                :class="avatarClasses(row.userId)"
+                :class="avatarClasses(row.userId, profiles[row.userId]?.login || row.userLogin)"
                 :src="profiles[row.userId]?.logo"
                 @click="$emit('open-profile', row.userId)"
                 alt=""
@@ -147,7 +147,7 @@ const props = withDefaults(
     entries: TierEntry[];
     rankMap: Record<string, number>;
     profiles: Record<string, { displayName: string; login: string; logo?: string }>;
-    avatarClasses: (id: string) => Record<string, boolean>;
+    avatarClasses: (id: string, login?: string) => Record<string, boolean>;
     tierColors: Record<string, string>;
     loading?: boolean;
     skeletonRows?: number;

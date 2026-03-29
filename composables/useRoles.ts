@@ -9,6 +9,40 @@ export const useRoles = () => {
     loading: false,
   });
 
+  const normalizeKey = (value: unknown) =>
+    String(value || "")
+      .trim()
+      .toLowerCase();
+
+  const extractRoleKeys = (entry: unknown) => {
+    if (typeof entry === "string" || typeof entry === "number") {
+      const key = normalizeKey(entry);
+      return key ? [key] : [];
+    }
+
+    if (!entry || typeof entry !== "object") return [];
+
+    const candidate = entry as Record<string, unknown>;
+    const keys = [
+      candidate.id,
+      candidate.userId,
+      candidate.login,
+      candidate.userLogin,
+      candidate.name,
+    ]
+      .map(normalizeKey)
+      .filter(Boolean);
+
+    return Array.from(new Set(keys));
+  };
+
+  const fillRoleSet = (set: Set<string>, entries: unknown) => {
+    const list = Array.isArray(entries) ? entries : [];
+    list.forEach((entry) => {
+      extractRoleKeys(entry).forEach((key) => set.add(key));
+    });
+  };
+
   const loadRoles = async (channel: string) => {
     const chan = channel.trim();
     if (!chan) return;
@@ -23,20 +57,14 @@ export const useRoles = () => {
     mods.clear();
     vips.clear();
 
-    const fetchRoles = async (type: "mods" | "vips") => {
-      const url = `https://tools.2807.eu/api/get${type}/${encodeURIComponent(chan)}`;
-      return $fetch<any[]>(url).catch(() => []);
-    };
-
     try {
-      const resMods = await fetchRoles("mods");
-      (Array.isArray(resMods) ? resMods : []).forEach((m: any) =>
-        mods.add(m.id || m.login || m.name),
-      );
-      const resVips = await fetchRoles("vips");
-      (Array.isArray(resVips) ? resVips : []).forEach((v: any) =>
-        vips.add(v.id || v.login || v.name),
-      );
+      const roles = await $fetch<{
+        moderators?: unknown[];
+        vips?: unknown[];
+      }>(`/api-cache/roles/${encodeURIComponent(chan)}.json`).catch(() => ({}));
+
+      fillRoleSet(mods, roles.moderators);
+      fillRoleSet(vips, roles.vips);
     } finally {
       state.lastChannel = chan;
       state.lastLoadedAt = now;
@@ -44,10 +72,13 @@ export const useRoles = () => {
     }
   };
 
-  const avatarClasses = (id: string) => ({
-    "role-mod-border": mods.has(id),
-    "role-vip-border": vips.has(id),
-  });
+  const avatarClasses = (id: string, login?: string) => {
+    const keys = [normalizeKey(id), normalizeKey(login)].filter(Boolean);
+    return {
+      "role-mod-border": keys.some((key) => mods.has(key)),
+      "role-vip-border": keys.some((key) => vips.has(key)),
+    };
+  };
 
   return {
     mods,
