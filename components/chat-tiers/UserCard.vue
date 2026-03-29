@@ -1,60 +1,62 @@
 <template>
-  <div class="backdrop" @click.self="$emit('close')">
-    <div class="card" :style="cardStyle">
-      <header class="head">
-        <div class="user">
-          <img
-            v-if="userData.logo"
-            :src="userData.logo"
-            alt=""
-            ref="avatarEl"
-            crossorigin="anonymous"
-            @load="onAvatarLoad"
-          />
-          <div>
-            <p class="title">{{ displayName }}</p>
-            <p class="muted mono">ID: {{ userData.id }}</p>
+  <Teleport to="body">
+    <div class="backdrop" @click.self="$emit('close')">
+      <div class="card" :style="cardStyle">
+        <header class="head">
+          <div class="user">
+            <img
+              v-if="userData.logo"
+              :src="userData.logo"
+              alt=""
+              ref="avatarEl"
+              crossorigin="anonymous"
+              @load="onAvatarLoad"
+            />
+            <div>
+              <p class="title">{{ displayName }}</p>
+              <p class="muted mono">ID: {{ userData.id }}</p>
+            </div>
+          </div>
+          <button class="btn primary" @click="$emit('close')">Закрыть</button>
+        </header>
+
+        <div class="metrics" v-if="metricItems.length">
+          <div v-for="item in metricItems" :key="item.label" class="metric">
+            <p class="label">{{ item.label }}</p>
+            <p class="value">{{ item.value }}</p>
           </div>
         </div>
-        <button class="btn primary" @click="$emit('close')">Закрыть</button>
-      </header>
 
-      <div class="metrics" v-if="metricItems.length">
-        <div v-for="item in metricItems" :key="item.label" class="metric">
-          <p class="label">{{ item.label }}</p>
-          <p class="value">{{ item.value }}</p>
+        <div class="metric" v-if="selectedEntry">
+          <p class="label">Сообщения / Уникальные</p>
+          <p class="value">{{ selectedEntry.messages }} / {{ selectedEntry.uniqueMessages }}</p>
         </div>
-      </div>
 
-      <div class="metric" v-if="selectedEntry">
-        <p class="label">Сообщения / Уникальные</p>
-        <p class="value">{{ selectedEntry.messages }} / {{ selectedEntry.uniqueMessages }}</p>
-      </div>
-
-      <div class="tiers" v-if="selectedEntry">
-        <!-- <TierChip label="1м" :tier="selectedEntry.tier1m" :hours="formatHours(selectedEntry.windows1m, 1)" :colors="tierColors" />
-        <TierChip label="5м" :tier="selectedEntry.tier5m" :hours="formatHours(selectedEntry.windows5m, 5)" :colors="tierColors" />
-        <TierChip label="15м" :tier="selectedEntry.tier15m" :hours="formatHours(selectedEntry.windows15m, 15)" :colors="tierColors" />
-        <TierChip label="30м" :tier="selectedEntry.tier30m" :hours="formatHours(selectedEntry.windows30m, 30)" :colors="tierColors" />
-        <TierChip label="60м" :tier="selectedEntry.tier60m" :hours="formatHours(selectedEntry.windows60m, 60)" :colors="tierColors" /> -->
-        <div class="metric score">
-          <p class="label">Место в топе</p>
-          <p class="value">
-            {{ selectedRank != null ? `#${selectedRank + 1}` : "-" }}
-          </p>
+        <div class="tiers" v-if="selectedEntry">
+          <!-- <TierChip label="1м" :tier="selectedEntry.tier1m" :hours="formatHours(selectedEntry.windows1m, 1)" :colors="tierColors" />
+          <TierChip label="5м" :tier="selectedEntry.tier5m" :hours="formatHours(selectedEntry.windows5m, 5)" :colors="tierColors" />
+          <TierChip label="15м" :tier="selectedEntry.tier15m" :hours="formatHours(selectedEntry.windows15m, 15)" :colors="tierColors" />
+          <TierChip label="30м" :tier="selectedEntry.tier30m" :hours="formatHours(selectedEntry.windows30m, 30)" :colors="tierColors" />
+          <TierChip label="60м" :tier="selectedEntry.tier60m" :hours="formatHours(selectedEntry.windows60m, 60)" :colors="tierColors" /> -->
+          <div class="metric score">
+            <p class="label">Место в топе</p>
+            <p class="value">
+              {{ selectedRank != null ? `#${selectedRank + 1}` : "-" }}
+            </p>
+          </div>
+          <div class="metric score">
+            <p class="label">Очки мощи</p>
+            <p class="value">{{ powerPoints }}</p>
+          </div>
         </div>
-        <div class="metric score">
-          <p class="label">Очки мощи</p>
-          <p class="value">{{ powerPoints }}</p>
-        </div>
-      </div>
 
-      <div class="metric" v-else>
-        <p class="label">В этом срезе</p>
-        <p class="value">Нет в текущем списке тиров</p>
+        <div class="metric" v-else>
+          <p class="label">В этом срезе</p>
+          <p class="value">Нет в текущем списке тиров</p>
+        </div>
       </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">

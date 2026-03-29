@@ -5,7 +5,6 @@ import TierControls from "~/components/chat-tiers/TierControls.vue";
 import TierSummary from "~/components/chat-tiers/TierSummary.vue";
 import TierTable from "~/components/chat-tiers/TierTable.vue";
 import UserCard from "~/components/chat-tiers/UserCard.vue";
-import LoadingBar from "~/components/chat-tiers/LoadingBar.vue";
 import { useRoles } from "~/composables/useRoles";
 import { defaultTierColors } from "~/constants/tiers";
 import {
@@ -62,6 +61,7 @@ const showProfile = ref(false);
 
 const tierColors = reactive<Record<string, string>>({ ...defaultTierColors });
 const prefetchIndex = ref(0);
+const tableAnimationSeed = ref(0);
 const tableRef = ref<{
   wrapEl: HTMLElement | null;
   sentinelEl: HTMLElement | null;
@@ -160,11 +160,11 @@ const fetchRelations = async (ids: string[]) => {
   }
 };
 
-const fetchUser = async () => {
+const lookupUserRemotely = async (termOverride?: string) => {
   userError.value = null;
   userData.value = null;
   showProfile.value = false;
-  const term = userLookup.value.trim();
+  const term = (termOverride ?? userLookup.value).trim();
   if (!term) return;
   userLoading.value = true;
   try {
@@ -210,8 +210,58 @@ const fetchUser = async () => {
   }
 };
 
+const normalizeSearch = (value?: string | null) =>
+  String(value || "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ");
+
+const fuzzyScore = (query: string, target: string) => {
+  if (!query || !target) return -1;
+  if (target === query) return 1200;
+  if (target.startsWith(query)) return 950 - (target.length - query.length);
+  if (target.includes(query)) return 700 - (target.length - query.length);
+
+  let score = 0;
+  let qIndex = 0;
+  let consecutive = 0;
+
+  for (let i = 0; i < target.length && qIndex < query.length; i += 1) {
+    if (target[i] !== query[qIndex]) continue;
+    consecutive += 1;
+    score += 32 + consecutive * 14;
+    qIndex += 1;
+  }
+
+  return qIndex === query.length ? score - (target.length - query.length) * 2 : -1;
+};
+
+const filteredEntries = computed(() => {
+  const query = normalizeSearch(activeSearch.value);
+  if (!query || !rankedEntries.value.length) return [];
+
+  return rankedEntries.value
+    .map((entry) => {
+      const profile = profiles[entry.userId];
+      const displayName = normalizeSearch(profile?.displayName || entry.userLogin || entry.userId);
+      const login = normalizeSearch(profile?.login || entry.userLogin || "");
+      const userId = normalizeSearch(entry.userId);
+      return Math.max(
+        fuzzyScore(query, userId) + (userId === query ? 900 : 0),
+        fuzzyScore(query, login),
+        fuzzyScore(query, displayName),
+      );
+    })
+    .map((score, idx) => ({ score, entry: rankedEntries.value[idx] }))
+    .filter((item) => item.score >= 0)
+    .map((item) => item.entry);
+});
+
+const displayedEntries = computed(() =>
+  activeSearch.value.trim() ? filteredEntries.value : data.value?.entries || [],
+);
+
 const openProfile = async (userId: string) => {
-  userLookup.value = userId;
   const entry = data.value?.entries.find((e: TierEntry) => e.userId === userId);
   const prof = profiles[userId];
   if (entry) {
@@ -233,22 +283,12 @@ const openProfile = async (userId: string) => {
   if (needsRelations) {
     await fetchRelations([userId]);
   }
-  await fetchUser();
+  await lookupUserRemotely(userId);
 };
 
 const data = ref<TierResponse | null>(null);
 const pending = ref(false);
 const error = ref<unknown>(null);
-const loadingNote = ref("");
-const elapsedMs = ref(0);
-let timer: ReturnType<typeof setInterval> | null = null;
-
-const clearTimer = () => {
-  if (timer) {
-    clearInterval(timer);
-    timer = null;
-  }
-};
 
 const syncFromQuery = () => {
   const q = route.query;
@@ -331,33 +371,16 @@ const loadAvailable = async () => {
 };
 
 const loadTiers = async () => {
-  pending.value = true;
-  error.value = null;
-  loadingNote.value = "Готовим запрос...";
-  elapsedMs.value = 0;
-  clearTimer();
-  const started = Date.now();
-  timer = setInterval(() => {
-    elapsedMs.value = Date.now() - started;
-  }, 120);
-  try {
-    data.value = await fetchTiers({
-      channel: channel.value,
-      scope: scope.value,
-      year: year.value,
-      month: month.value,
-      mode: mode.value,
-    });
-    prefetchIndex.value = 0;
-    await prefetchMoreProfiles();
-    loadingNote.value = `Готово за ${elapsedMs.value} ms`;
-  } catch (e: unknown) {
-    error.value = e;
-    loadingNote.value = "Ошибка запроса";
-  } finally {
-    clearTimer();
-    pending.value = false;
-  }
+  data.value = await fetchTiers({
+    channel: channel.value,
+    scope: scope.value,
+    year: year.value,
+    month: month.value,
+    mode: mode.value,
+  });
+  tableAnimationSeed.value += 1;
+  prefetchIndex.value = 0;
+  await prefetchMoreProfiles();
 };
 
 watch(
@@ -375,10 +398,23 @@ watch(
 );
 
 const reload = async () => {
-  await loadRoles(channel.value);
-  await loadAvailable();
-  await loadTiers();
-  pushQuery();
+  pending.value = true;
+  error.value = null;
+
+  const rolesPromise = loadRoles(channel.value).catch(() => {
+    /* cosmetic only */
+  });
+
+  try {
+    await loadAvailable();
+    await loadTiers();
+    await rolesPromise;
+    pushQuery();
+  } catch (e: unknown) {
+    error.value = e;
+  } finally {
+    pending.value = false;
+  }
 };
 
 watch(
@@ -485,6 +521,11 @@ const rankedEntries = computed(() =>
   data.value?.entries ? sortScoredEntries(data.value.entries) : [],
 );
 
+const activeSearch = computed(() => userLookup.value.trim());
+const rankMap = computed(() =>
+  Object.fromEntries(rankedEntries.value.map((entry, index) => [entry.userId, index + 1])),
+);
+
 const selectedEntry = computed(() => {
   if (!data.value || !userData.value) return null;
   return data.value.entries.find((e: TierEntry) => e.userId === userData.value?.id) || null;
@@ -554,11 +595,16 @@ const errorText = computed(() => {
     <section class="card no-lift">
       <div class="lookup">
         <div class="lookup-row">
-          <input v-model="userLookup" type="text" placeholder="login or id" />
-          <button class="btn primary" @click="fetchUser" :disabled="userLoading">
-            {{ userLoading ? "Загрузка..." : "Поиск" }}
+          <input v-model="userLookup" type="text" placeholder="login, display name or id" />
+          <button v-if="activeSearch" class="btn secondary" type="button" @click="userLookup = ''">
+            Сбросить
           </button>
         </div>
+        <p v-if="activeSearch" class="lookup-meta">
+          Найдено {{ filteredEntries.length }} из {{ rankedEntries.length }} по запросу "{{
+            activeSearch
+          }}"
+        </p>
         <p v-if="userError" class="error-text">Ошибка: {{ userError }}</p>
         <div v-if="userData" class="profile-mini">
           <span class="value">{{ userData.displayName }}</span>
@@ -573,30 +619,33 @@ const errorText = computed(() => {
       <p>Ошибка: {{ errorText }}</p>
     </section>
 
-    <LoadingBar
-      v-if="pending"
-      :label="`${channel} / ${scope} / ${mode}`"
-      :elapsed-ms="elapsedMs"
-      :note="loadingNote"
-    />
-
-    <section v-else-if="data" class="card no-lift">
+    <section v-if="pending || data" class="card no-lift results-card">
       <TierSummary
+        :loading="pending"
         :period="periodText"
-        :timezone="data.timezone"
-        :users="data.totalUsers"
-        :messages="data.totalMessages"
-        :unique="data.totalUniqueMessages"
+        :timezone="data?.timezone || ''"
+        :users="data?.totalUsers || 0"
+        :messages="data?.totalMessages || 0"
+        :unique="data?.totalUniqueMessages || 0"
       />
 
-      <TierTable
-        ref="tableRef"
-        :entries="data.entries"
-        :profiles="profiles"
-        :avatar-classes="avatarClasses"
-        :tier-colors="tierColors"
-        @open-profile="openProfile"
-      />
+      <div class="table-slot">
+        <p v-if="!pending && activeSearch && !filteredEntries.length" class="lookup-empty">
+          По текущему запросу ничего не найдено.
+        </p>
+        <TierTable
+          ref="tableRef"
+          :entries="displayedEntries"
+          :rank-map="rankMap"
+          :profiles="profiles"
+          :avatar-classes="avatarClasses"
+          :tier-colors="tierColors"
+          :loading="pending"
+          :skeleton-rows="11"
+          :animation-seed="tableAnimationSeed"
+          @open-profile="openProfile"
+        />
+      </div>
     </section>
   </main>
 
@@ -621,6 +670,9 @@ const errorText = computed(() => {
 .tiers-page {
   width: 100%;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
   backdrop-filter: blur(10px);
 }
 
@@ -671,6 +723,17 @@ h1 {
   padding: 16px;
 }
 
+.results-card {
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.results-card :deep(.summary) {
+  padding: 16px 16px 12px;
+  margin-bottom: 0;
+}
+
 .card.no-lift:hover {
   transform: none;
   box-shadow: none;
@@ -681,6 +744,7 @@ h1 {
 .lookup {
   display: grid;
   gap: 12px;
+  position: relative;
 }
 
 .lookup-row {
@@ -697,6 +761,17 @@ h1 {
   color: var(--color-text-1);
   border-radius: 12px;
   padding: 10px 12px;
+}
+
+.lookup-meta,
+.lookup-empty {
+  color: var(--color-text-2);
+  font-size: 0.92rem;
+}
+
+.lookup-empty {
+  margin: 0;
+  padding: 12px 16px;
 }
 
 .lookup-row .btn:hover,
@@ -718,6 +793,7 @@ h1 {
   background: rgba(10, 10, 10, 0.92);
   color: var(--color-text-1);
   box-shadow: none;
+  cursor: pointer;
 }
 
 .btn.primary:hover {
@@ -763,6 +839,16 @@ h1 {
   gap: 8px;
 }
 
+.table-slot {
+  min-height: 0;
+}
+
+.table-slot :deep(.table-wrap) {
+  border: 0;
+  border-top: 1px solid var(--color-border);
+  border-radius: 0 0 14px 14px;
+}
+
 .btn.secondary {
   background: #0d0d0d;
   border: 1px solid #2d2d2d;
@@ -790,11 +876,11 @@ h1 {
 
 .btn.primary.refresh-btn:active {
   transform: none;
-  border-color: #065f46;
-  background: #059669;
+  border-color: #446973;
+  background: #43656d;
   box-shadow:
-    0 6px 18px rgba(16, 185, 129, 0.12),
-    0 0 10px rgba(16, 185, 129, 0.3);
+    0 6px 18px rgba(67, 101, 109, 0.18),
+    0 0 10px rgba(84, 129, 138, 0.24);
 }
 
 /* Disabled state: gray and non-interactive */
@@ -828,6 +914,33 @@ h1 {
 .muted a:focus,
 .muted a:hover {
   text-decoration: underline;
+}
+
+@media (min-width: 901px) {
+  .tiers-page {
+    height: calc(100dvh - 132px);
+    overflow: hidden;
+  }
+
+  .results-card {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .table-slot {
+    flex: 1 1 auto;
+    display: flex;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .table-slot :deep(.table-wrap) {
+    height: 100%;
+    width: 100%;
+    min-height: 0;
+  }
 }
 
 @media (max-width: 900px) {

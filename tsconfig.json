@@ -1,6 +1,6 @@
 {
-  "extends": "./.cache/nuxt/tsconfig.json",
+  "extends": "./.nuxt/tsconfig.json",
   "compilerOptions": {
-    "types": ["@types/node"]
-  }
+    "types": ["@types/node"],
+  },
 }

@@ -54,30 +54,51 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 
+const appReady = useState("app-ready", () => false);
 const isReady = ref(false);
+const fontsReady = ref(false);
 const currentYear = new Date().getFullYear();
 
-onMounted(() => {
-  const start = () => {
+const startAnimation = () => {
+  if (isReady.value || !appReady.value || !fontsReady.value) return;
+  requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       isReady.value = true;
     });
-  };
+  });
+};
 
+onMounted(async () => {
   const maxWaitMs = 400;
-  const fontsReady = (document as any)?.fonts?.ready as Promise<void> | undefined;
+  const documentFontsReady = (document as any)?.fonts?.ready as Promise<void> | undefined;
 
-  if (fontsReady && typeof (fontsReady as any).then === "function") {
-    Promise.race([fontsReady, new Promise((r) => setTimeout(r, maxWaitMs))])
-      .then(start)
-      .catch(start);
+  if (documentFontsReady && typeof (documentFontsReady as any).then === "function") {
+    Promise.race([documentFontsReady, new Promise((r) => setTimeout(r, maxWaitMs))])
+      .then(() => {
+        fontsReady.value = true;
+        startAnimation();
+      })
+      .catch(() => {
+        fontsReady.value = true;
+        startAnimation();
+      });
     return;
   }
 
-  setTimeout(start, 0);
+  setTimeout(() => {
+    fontsReady.value = true;
+    startAnimation();
+  }, 0);
 });
+
+watch(
+  () => appReady.value,
+  (ready) => {
+    if (ready) startAnimation();
+  },
+);
 </script>
 
 <style scoped>
@@ -107,7 +128,8 @@ onMounted(() => {
     linear-gradient(180deg, rgba(5, 7, 8, 0.18), rgba(5, 7, 8, 0.5)),
     url("/ruines.webp") center bottom / min(1420px, 94%) no-repeat;
   opacity: 0;
-  transform: translateY(36px) scale(1.02);
+  filter: blur(10px);
+  transform: translateY(78px) scale(1.08);
 }
 
 .hero-noise {
@@ -116,6 +138,7 @@ onMounted(() => {
   background: linear-gradient(180deg, rgba(6, 8, 9, 0.06), rgba(6, 8, 9, 0.28));
   mix-blend-mode: screen;
   opacity: 0;
+  transform: scale(1.03);
 }
 
 .hero-fade {
@@ -150,7 +173,8 @@ onMounted(() => {
   text-shadow:
     0 0 24px rgba(255, 255, 255, 0.7),
     0 0 60px rgba(180, 222, 230, 0.22);
-  transform: translateY(-95px);
+  filter: blur(18px);
+  transform: translateY(-24px) scale(0.84);
   opacity: 0;
 }
 
@@ -210,23 +234,30 @@ onMounted(() => {
 
 .home.is-ready .hero-overlay {
   opacity: 1;
+  filter: blur(0);
   transform: translateY(0) scale(1);
   transition:
-    opacity 0.9s ease,
-    transform 1.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    opacity 1s cubic-bezier(0.18, 0.88, 0.24, 1),
+    filter 1.35s var(--ease-emphasis),
+    transform 1.7s var(--ease-emphasis);
 }
 
 .home.is-ready .hero-noise {
   opacity: 1;
-  transition: opacity 1.2s ease;
+  transform: scale(1);
+  transition:
+    opacity 1.4s cubic-bezier(0.18, 0.88, 0.24, 1),
+    transform 1.8s var(--ease-emphasis);
 }
 
 .home.is-ready .hero-wordmark {
   opacity: 1;
+  filter: blur(0);
   transform: translateY(-90px);
   transition:
-    opacity 0.8s ease 0.08s,
-    transform 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) 0.08s;
+    opacity 0.95s cubic-bezier(0.22, 1, 0.36, 1) 0.16s,
+    filter 1.15s var(--ease-emphasis) 0.16s,
+    transform 1.5s var(--ease-emphasis) 0.16s;
 }
 
 @media (max-width: 1100px) {
@@ -256,6 +287,7 @@ onMounted(() => {
   .hero-noise,
   .hero-wordmark {
     opacity: 1 !important;
+    filter: none !important;
     transform: none !important;
     transition: none !important;
   }

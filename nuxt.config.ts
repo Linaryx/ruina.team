@@ -1,6 +1,7 @@
 import { defineNuxtConfig } from "nuxt/config";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const contentDir = path.resolve(__dirname, "content");
 
@@ -36,7 +37,6 @@ const contentRoutes = collectContentRoutes(contentDir);
 export default defineNuxtConfig({
   // Lock behavior of presets/modules (Nitro, etc.) to avoid unexpected changes.
   compatibilityDate: "2026-01-28",
-  buildDir: ".cache/nuxt",
   modules: ["@nuxt/content"],
   css: ["~/assets/css/tokens.css", "~/assets/css/base.css", "~/assets/css/loading.css"],
   vite: {
@@ -104,6 +104,24 @@ export default defineNuxtConfig({
     // This also avoids Windows occasionally locking `.output` between runs.
     output: {
       dir: "dist",
+    },
+    rollupConfig: {
+      plugins: [
+        {
+          name: "windows-file-url-normalizer",
+          resolveId(id) {
+            if (process.platform !== "win32" || !id.startsWith("file:///")) {
+              return null;
+            }
+
+            try {
+              return fileURLToPath(id);
+            } catch {
+              return null;
+            }
+          },
+        },
+      ],
     },
     prerender: {
       routes: Array.from(new Set(["/", "/guides", "/modpacks", ...contentRoutes])),

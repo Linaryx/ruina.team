@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const criticalAssets = ["/bg.webp", "/ruines.webp", "/loading-emote.webp"] as const;
 const loadingEmoteSrc = criticalAssets[2];
+const appReady = useState("app-ready", () => false);
 
 const route = useRoute();
 const isHome = computed(() => route.path === "/");
@@ -10,6 +11,9 @@ const isLoading = ref(true);
 onMounted(async () => {
   await Promise.all([waitForMinimumLoad(), preloadCriticalAssets()]);
   isLoading.value = false;
+  window.setTimeout(() => {
+    appReady.value = true;
+  }, 360);
 });
 
 function waitForMinimumLoad() {
