@@ -167,6 +167,27 @@ const monthOptions = computed(() =>
   }),
 );
 const yearOptions = computed(() => props.availableYears || []);
+
+watch(yearOptions, (options) => {
+  if (options.length && !options.includes(local.year)) {
+    local.year = options[0];
+  }
+});
+
+watch(monthOptions, (options) => {
+  if (!options.length) return;
+  const values = options.map((option) => option.value);
+  if (!values.includes(local.month)) {
+    local.month = values[values.length - 1];
+  }
+});
+
+watch(modeOptionsComputed, (options) => {
+  if (options.length && !options.some((option) => option.value === local.mode)) {
+    local.mode = options[0].value;
+  }
+});
+
 watch(
   () => ({ ...local }),
   (v) => {

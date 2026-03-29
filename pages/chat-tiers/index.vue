@@ -21,7 +21,12 @@ const month = ref(new Date().getMonth() + 1);
 const scope = ref<Scope>("month");
 const mode = ref<Mode>("online");
 const hadInitialPeriodQuery = ref(false);
-const availableYears = ref<number[]>([]);
+const availableYearsMap = ref<Record<Scope, number[]>>({
+  year: [],
+  month: [],
+  day: [],
+});
+const availableYears = computed(() => availableYearsMap.value[scope.value] || []);
 const availableMonthsMap = ref<Record<number, number[]>>({});
 const availableMonths = computed(() => availableMonthsMap.value[year.value] || []);
 const availableChannels = ref<string[]>([]);
@@ -289,7 +294,7 @@ const data = ref<TierResponse | null>(null);
 const pending = ref(false);
 const error = ref<unknown>(null);
 const latestMonthlySelection = computed(() => {
-  for (const y of availableYears.value) {
+  for (const y of availableYearsMap.value.month) {
     const monthsForYear = availableMonthsMap.value[y] || [];
     if (monthsForYear.length) {
       return {
@@ -367,13 +372,12 @@ const loadAvailable = async (preferLatestMonth = false) => {
     const chRes = await fetchAvailableChannels();
     availableChannels.value = chRes.channels;
     const res = await fetchAvailablePeriods(channel.value);
-    availableYears.value = res.years;
+    availableYearsMap.value = res.years as Record<Scope, number[]>;
     availableMonthsMap.value = res.months;
     availableModesMap.value = res.modes as Record<Scope, Mode[]>;
-    const hasMonths = Object.keys(res.months || {}).length > 0;
     const scopes: Scope[] = [];
-    if (res.years.length) scopes.push("year");
-    if (hasMonths) scopes.push("month");
+    if (res.years.year.length) scopes.push("year");
+    if (res.years.month.length) scopes.push("month");
     availableScopes.value = scopes;
     if (availableScopes.value.length === 1) {
       scope.value = availableScopes.value[0];
@@ -383,7 +387,11 @@ const loadAvailable = async (preferLatestMonth = false) => {
     alignToAvailable(preferLatestMonth);
   } catch {
     availableChannels.value = [];
-    availableYears.value = [];
+    availableYearsMap.value = {
+      year: [],
+      month: [],
+      day: [],
+    };
     availableMonthsMap.value = {};
     availableScopes.value = [];
     availableModesMap.value = {
@@ -480,7 +488,15 @@ watch(
 );
 
 watch(
-  () => [scope.value, month.value, mode.value],
+  () => scope.value,
+  () => {
+    alignToAvailable();
+    pushQuery();
+  },
+);
+
+watch(
+  () => [month.value, mode.value],
   () => pushQuery(),
 );
 

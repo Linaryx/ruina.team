@@ -4,7 +4,7 @@ import type { Mode, Scope, TierResponse } from "~/types/tiers";
 import { useSupabaseClient } from "./supabase";
 
 type AvailableResult = {
-  years: number[];
+  years: Record<Scope, number[]>;
   months: Record<number, number[]>;
   modes: Record<Scope, Mode[]>;
 };
@@ -69,25 +69,32 @@ export async function fetchTiersSupabase(params: TiersParams): Promise<TierRespo
     .eq("scope", scope)
     .eq("mode", mode)
     .eq("period_key", period_key)
-    .limit(1)
-    .single();
+    .limit(1);
 
   if (error) throw error;
+  const row = data?.[0];
+  if (!row) return null;
 
   return {
     year,
     month,
     day,
     timezone: "Europe/Moscow",
-    totalUsers: data.total_users,
-    totalMessages: data.total_messages,
-    totalUniqueMessages: data.total_unique_messages,
-    entries: data.entries,
+    totalUsers: row.total_users,
+    totalMessages: row.total_messages,
+    totalUniqueMessages: row.total_unique_messages,
+    entries: row.entries,
   };
 }
 
 export async function fetchAvailablePeriods(channel: string): Promise<AvailableResult> {
-  if (!channel.trim()) return { years: [], months: {}, modes: { year: [], month: [], day: [] } };
+  if (!channel.trim()) {
+    return {
+      years: { year: [], month: [], day: [] },
+      months: {},
+      modes: { year: [], month: [], day: [] },
+    };
+  }
   const sb = useSupabaseClient();
   const { data, error } = await sb
     .from("tiers_snapshots")
@@ -96,7 +103,11 @@ export async function fetchAvailablePeriods(channel: string): Promise<AvailableR
 
   if (error) throw error;
 
-  const years = new Set<number>();
+  const years: Record<Scope, Set<number>> = {
+    year: new Set<number>(),
+    month: new Set<number>(),
+    day: new Set<number>(),
+  };
   const months: Record<number, Set<number>> = {};
   const modes: Record<Scope, Set<Mode>> = {
     year: new Set<Mode>(),
@@ -112,13 +123,13 @@ export async function fetchAvailablePeriods(channel: string): Promise<AvailableR
     const mode = row?.mode as Mode | undefined;
     const y = parseInt(key.slice(0, 4), 10);
     const m = parseInt(key.slice(4, 6), 10);
-    if (!Number.isFinite(y)) return;
-    years.add(y);
+    if (!Number.isFinite(y) || !scope) return;
+    years[scope].add(y);
     if (scope === "month" && Number.isFinite(m)) {
       if (!months[y]) months[y] = new Set<number>();
       months[y].add(m);
     }
-    if (scope && modes[scope] && mode) {
+    if (modes[scope] && mode) {
       modes[scope].add(mode);
     }
   });
@@ -136,7 +147,11 @@ export async function fetchAvailablePeriods(channel: string): Promise<AvailableR
   };
 
   return {
-    years: Array.from(years).sort((a, b) => b - a),
+    years: {
+      year: Array.from(years.year).sort((a, b) => b - a),
+      month: Array.from(years.month).sort((a, b) => b - a),
+      day: Array.from(years.day).sort((a, b) => b - a),
+    },
     months: monthsNormalized,
     modes: modesNormalized,
   };
