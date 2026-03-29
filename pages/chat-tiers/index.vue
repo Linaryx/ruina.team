@@ -20,19 +20,18 @@ const year = ref(new Date().getFullYear());
 const month = ref(new Date().getMonth() + 1);
 const scope = ref<Scope>("month");
 const mode = ref<Mode>("online");
+const hadInitialPeriodQuery = ref(false);
 const availableYears = ref<number[]>([]);
 const availableMonthsMap = ref<Record<number, number[]>>({});
 const availableMonths = computed(() => availableMonthsMap.value[year.value] || []);
 const availableChannels = ref<string[]>([]);
-const availableScopes = ref<Scope[]>(["year", "month"]);
+const availableScopes = ref<Scope[]>([]);
 const availableModesMap = ref<Record<Scope, Mode[]>>({
-  year: ["all", "online", "offline"],
-  month: ["all", "online", "offline"],
-  day: ["all", "online", "offline"],
+  year: [],
+  month: [],
+  day: [],
 });
-const availableModes = computed(
-  () => availableModesMap.value[scope.value] || ["all", "online", "offline"],
-);
+const availableModes = computed(() => availableModesMap.value[scope.value] || []);
 
 type IvrUser = {
   id: string;
@@ -289,9 +288,26 @@ const openProfile = async (userId: string) => {
 const data = ref<TierResponse | null>(null);
 const pending = ref(false);
 const error = ref<unknown>(null);
+const latestMonthlySelection = computed(() => {
+  for (const y of availableYears.value) {
+    const monthsForYear = availableMonthsMap.value[y] || [];
+    if (monthsForYear.length) {
+      return {
+        year: y,
+        month: monthsForYear[monthsForYear.length - 1],
+      };
+    }
+  }
+  return null;
+});
 
 const syncFromQuery = () => {
   const q = route.query;
+  hadInitialPeriodQuery.value =
+    typeof q.scope === "string" ||
+    typeof q.year === "string" ||
+    typeof q.month === "string" ||
+    typeof q.mode === "string";
   if (typeof q.channel === "string" && q.channel.trim()) channel.value = q.channel.trim();
   if (q.scope === "year" || q.scope === "month") scope.value = q.scope;
   const y = Number(q.year);
@@ -313,27 +329,40 @@ const pushQuery = () => {
   });
 };
 
-const alignToAvailable = () => {
+const alignToAvailable = (preferLatestMonth = false) => {
   if (availableChannels.value.length && !availableChannels.value.includes(channel.value)) {
     channel.value = availableChannels.value[0];
   }
+
+  let yearWasAdjusted = false;
   if (availableYears.value.length && !availableYears.value.includes(year.value)) {
     year.value = availableYears.value[0];
+    yearWasAdjusted = true;
   }
-  if (scope.value === "month") {
+
+  if (
+    preferLatestMonth &&
+    latestMonthlySelection.value &&
+    availableScopes.value.includes("month")
+  ) {
+    scope.value = "month";
+    year.value = latestMonthlySelection.value.year;
+    month.value = latestMonthlySelection.value.month;
+  } else if (scope.value === "month") {
     const monthsForYear = availableMonths.value;
     if (!monthsForYear.length) {
       scope.value = "year";
-    } else if (!monthsForYear.includes(month.value)) {
-      month.value = monthsForYear[0];
+    } else if (yearWasAdjusted || !monthsForYear.includes(month.value)) {
+      month.value = monthsForYear[monthsForYear.length - 1];
     }
   }
+
   if (availableModes.value.length && !availableModes.value.includes(mode.value)) {
     mode.value = availableModes.value[0];
   }
 };
 
-const loadAvailable = async () => {
+const loadAvailable = async (preferLatestMonth = false) => {
   try {
     const chRes = await fetchAvailableChannels();
     availableChannels.value = chRes.channels;
@@ -345,28 +374,23 @@ const loadAvailable = async () => {
     const scopes: Scope[] = [];
     if (res.years.length) scopes.push("year");
     if (hasMonths) scopes.push("month");
-    availableScopes.value = scopes.length ? scopes : ["year"];
-    // первично сдвигаем год/месяц в допустимые для текущего канала
-    const firstYear = res.years[0];
-    if (firstYear && !res.years.includes(year.value)) {
-      year.value = firstYear;
-    }
-    const monthsForYear = res.months[year.value] || [];
-    const firstMonth = monthsForYear[0];
-    if (monthsForYear.length && !monthsForYear.includes(month.value) && firstMonth) {
-      month.value = firstMonth;
-    }
+    availableScopes.value = scopes;
     if (availableScopes.value.length === 1) {
       scope.value = availableScopes.value[0];
     } else if (!availableScopes.value.includes(scope.value)) {
-      scope.value = availableScopes.value[0];
+      scope.value = availableScopes.value[0] || "year";
     }
-    alignToAvailable();
+    alignToAvailable(preferLatestMonth);
   } catch {
     availableChannels.value = [];
     availableYears.value = [];
     availableMonthsMap.value = {};
-    availableScopes.value = ["year"];
+    availableScopes.value = [];
+    availableModesMap.value = {
+      year: [],
+      month: [],
+      day: [],
+    };
   }
 };
 
@@ -383,6 +407,15 @@ const loadTiers = async () => {
   await prefetchMoreProfiles();
 };
 
+const canReload = computed(() => {
+  if (!channel.value.trim()) return false;
+  if (!availableYears.value.length) return false;
+  if (!availableScopes.value.includes(scope.value)) return false;
+  if (!availableModes.value.length || !availableModes.value.includes(mode.value)) return false;
+  if (scope.value === "month" && !availableMonths.value.includes(month.value)) return false;
+  return true;
+});
+
 watch(
   () => data.value?.entries,
   async (entries: TierEntry[] | undefined) => {
@@ -398,6 +431,8 @@ watch(
 );
 
 const reload = async () => {
+  if (!canReload.value) return;
+
   pending.value = true;
   error.value = null;
 
@@ -428,7 +463,7 @@ watch(
 watch(
   () => channel.value,
   async () => {
-    await loadAvailable();
+    await loadAvailable(true);
     pushQuery();
   },
 );
@@ -498,7 +533,7 @@ const handleScroll = () => {
 
 onMounted(async () => {
   syncFromQuery();
-  await loadAvailable();
+  await loadAvailable(!hadInitialPeriodQuery.value);
   setupPrefetchObserver();
 });
 
@@ -568,7 +603,7 @@ const errorText = computed(() => {
           >: online / offline / all
         </p>
       </div>
-      <button class="btn primary refresh-btn" @click="reload" :disabled="pending">
+      <button class="btn primary refresh-btn" @click="reload" :disabled="pending || !canReload">
         {{ pending ? "Загрузка..." : "Загрузить статистику" }}
       </button>
     </header>

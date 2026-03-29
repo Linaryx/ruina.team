@@ -21,6 +21,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
     env:
       NUXT_PUBLIC_SUPABASE_URL: ${{ secrets.NUXT_PUBLIC_SUPABASE_URL }}
       NUXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NUXT_PUBLIC_SUPABASE_ANON_KEY }}
@@ -36,6 +38,11 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+      - name: Validate required secrets
+        run: |
+          test -n "$NUXT_PUBLIC_SUPABASE_URL" || { echo "Missing NUXT_PUBLIC_SUPABASE_URL"; exit 1; }
+          test -n "$NUXT_PUBLIC_SUPABASE_ANON_KEY" || { echo "Missing NUXT_PUBLIC_SUPABASE_ANON_KEY"; exit 1; }
 
       - name: Prefetch data
         run: bun run fetch:data

@@ -16,7 +16,8 @@
 
     <label>
       <span>Период</span>
-      <select v-model="local.scope">
+      <select v-model="local.scope" :disabled="!scopeOptions.length">
+        <option v-if="!scopeOptions.length" :value="local.scope">Нет доступных периодов</option>
         <option v-for="opt in scopeOptions" :key="opt.value" :value="opt.value">
           {{ opt.label }}
         </option>
@@ -25,7 +26,8 @@
 
     <label>
       <span>Год</span>
-      <select v-model.number="local.year">
+      <select v-model.number="local.year" :disabled="!yearOptions.length">
+        <option v-if="!yearOptions.length" :value="local.year">Нет доступных лет</option>
         <option v-for="y in yearOptions" :key="y" :value="y">
           {{ y }}
         </option>
@@ -34,7 +36,8 @@
 
     <label v-if="local.scope !== 'year'">
       <span>Месяц</span>
-      <select v-model.number="local.month">
+      <select v-model.number="local.month" :disabled="!monthOptions.length">
+        <option v-if="!monthOptions.length" :value="local.month">Нет доступных месяцев</option>
         <option v-for="m in monthOptions" :key="m.value" :value="m.value">
           {{ m.label }}
         </option>
@@ -43,7 +46,10 @@
 
     <label>
       <span>Режим чата</span>
-      <select v-model="local.mode">
+      <select v-model="local.mode" :disabled="!modeOptionsComputed.length">
+        <option v-if="!modeOptionsComputed.length" :value="local.mode">
+          Нет доступных режимов
+        </option>
         <option v-for="opt in modeOptionsComputed" :key="opt.value" :value="opt.value">
           {{ opt.label }}
         </option>
@@ -84,19 +90,13 @@ const modeOptions: { label: string; value: Mode }[] = [
   { label: "Оффлайн", value: "offline" as Mode },
 ];
 const scopeOptions = computed<{ label: string; value: Scope }[]>(() => {
-  const avail =
-    props.availableScopes && props.availableScopes.length
-      ? props.availableScopes
-      : (["year", "month"] as Scope[]);
-  return avail.map((s) => ({
+  return (props.availableScopes || []).map((s) => ({
     value: s,
     label: s === "year" ? "Год" : "Месяц",
   }));
 });
 const modeOptionsComputed = computed(() => {
-  const avail = props.availableModes && props.availableModes.length ? props.availableModes : null;
-  const base = avail || (["all", "online", "offline"] as Mode[]);
-  return base.map((m: Mode) => ({
+  return (props.availableModes || []).map((m: Mode) => ({
     value: m,
     label: m === "all" ? "Все" : m === "online" ? "Онлайн" : "Оффлайн",
   }));
@@ -142,9 +142,7 @@ watch(
   },
 );
 
-const currentYear = new Date().getFullYear();
 const channelOptions = computed(() => props.availableChannels || []);
-const defaultYears = Array.from({ length: currentYear - 2021 }, (_, i) => currentYear - i);
 const defaultMonthOptions = [
   { value: 1, label: "01 · Январь" },
   { value: 2, label: "02 · Февраль" },
@@ -159,22 +157,16 @@ const defaultMonthOptions = [
   { value: 11, label: "11 · Ноябрь" },
   { value: 12, label: "12 · Декабрь" },
 ];
-const monthOptions = computed(() => {
-  const avail = props.availableMonths || [];
-  if (avail.length) {
-    return avail.map((m) => {
-      const base = defaultMonthOptions.find((o) => o.value === m);
-      return {
-        value: m,
-        label: base ? base.label : m.toString().padStart(2, "0"),
-      };
-    });
-  }
-  return defaultMonthOptions;
-});
-const yearOptions = computed(() =>
-  props.availableYears?.length ? props.availableYears : defaultYears,
+const monthOptions = computed(() =>
+  (props.availableMonths || []).map((m) => {
+    const base = defaultMonthOptions.find((o) => o.value === m);
+    return {
+      value: m,
+      label: base ? base.label : m.toString().padStart(2, "0"),
+    };
+  }),
 );
+const yearOptions = computed(() => props.availableYears || []);
 watch(
   () => ({ ...local }),
   (v) => {
