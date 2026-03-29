@@ -78,6 +78,17 @@ const { loadRoles, avatarClasses } = useRoles();
 const route = useRoute();
 const router = useRouter();
 
+const firstQueryValue = (value: unknown) => (Array.isArray(value) ? value[0] : value);
+const getQueryString = (...keys: string[]) => {
+  for (const key of keys) {
+    const value = firstQueryValue(route.query[key]);
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+  return "";
+};
+
 const plural = (n: number, forms: [string, string, string]) => {
   const abs = Math.abs(n) % 100;
   const d = abs % 10;
@@ -307,29 +318,37 @@ const latestMonthlySelection = computed(() => {
 });
 
 const syncFromQuery = () => {
-  const q = route.query;
   hadInitialPeriodQuery.value =
-    typeof q.scope === "string" ||
-    typeof q.year === "string" ||
-    typeof q.month === "string" ||
-    typeof q.mode === "string";
-  if (typeof q.channel === "string" && q.channel.trim()) channel.value = q.channel.trim();
-  if (q.scope === "year" || q.scope === "month") scope.value = q.scope;
-  const y = Number(q.year);
+    !!getQueryString("sc", "scope") ||
+    !!getQueryString("y", "year") ||
+    !!getQueryString("mo", "month") ||
+    !!getQueryString("m", "mode");
+
+  const queryChannel = getQueryString("c", "channel");
+  const queryScope = getQueryString("sc", "scope");
+  const queryYear = getQueryString("y", "year");
+  const queryMonth = getQueryString("mo", "month");
+  const queryMode = getQueryString("m", "mode");
+
+  if (queryChannel) channel.value = queryChannel;
+  if (queryScope === "year" || queryScope === "month") scope.value = queryScope;
+  const y = Number(queryYear);
   if (Number.isFinite(y) && y > 2000) year.value = y;
-  const m = Number(q.month);
+  const m = Number(queryMonth);
   if (Number.isFinite(m) && m >= 1 && m <= 12) month.value = m;
-  if (q.mode === "all" || q.mode === "online" || q.mode === "offline") mode.value = q.mode;
+  if (queryMode === "all" || queryMode === "online" || queryMode === "offline") {
+    mode.value = queryMode;
+  }
 };
 
 const pushQuery = () => {
   router.replace({
     query: {
-      channel: channel.value,
-      scope: scope.value,
-      year: String(year.value),
-      month: String(month.value),
-      mode: mode.value,
+      c: channel.value,
+      sc: scope.value,
+      y: String(year.value),
+      mo: String(month.value),
+      m: mode.value,
     },
   });
 };
