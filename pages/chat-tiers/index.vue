@@ -346,12 +346,13 @@ const pushQuery = () => {
     c: channel.value,
     sc: scope.value,
     y: String(year.value),
-    m: mode.value,
   };
 
   if (scope.value !== "year") {
     query.mo = String(month.value);
   }
+
+  query.m = mode.value;
 
   router.replace({
     query,
@@ -993,7 +994,8 @@ h1 {
 
 @media (min-width: 901px) {
   .tiers-page {
-    height: calc(100dvh - 132px);
+    min-height: 940px;
+    height: max(calc(100dvh - 132px), 940px);
     overflow: hidden;
   }
 
@@ -1001,20 +1003,20 @@ h1 {
     flex: 1 1 auto;
     display: flex;
     flex-direction: column;
+    min-height: 0;
     overflow: hidden;
   }
 
   .table-slot {
-    flex: 1 1 auto;
-    display: flex;
-    min-height: 0;
+    flex: 1 0 420px;
+    min-height: 420px;
     overflow: hidden;
   }
 
   .table-slot :deep(.table-wrap) {
     height: 100%;
     width: 100%;
-    min-height: 0;
+    min-height: 420px;
   }
 }
 
