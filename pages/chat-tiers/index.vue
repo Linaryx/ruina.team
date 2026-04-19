@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch, onMounted, onBeforeUnmount } from "vue";
-import { useRoute, useRouter } from "#imports";
+import { computed, reactive, ref, watch, onMounted } from "vue";
 import TierControls from "~/components/chat-tiers/TierControls.vue";
 import TierSummary from "~/components/chat-tiers/TierSummary.vue";
 import TierTable from "~/components/chat-tiers/TierTable.vue";
 import UserCard from "~/components/chat-tiers/UserCard.vue";
+import { useChatTiersQuery } from "~/composables/useChatTiersQuery";
+import { usePrefetchRows } from "~/composables/usePrefetchRows";
 import { useRoles } from "~/composables/useRoles";
 import { defaultTierColors } from "~/constants/tiers";
 import {
@@ -12,7 +13,16 @@ import {
   fetchAvailablePeriods,
   fetchTiersSupabase as fetchTiers,
 } from "~/lib/api";
+import { humanizeFromDate, humanizeMonths } from "~/lib/format";
 import { sortScoredEntries } from "~/lib/score";
+import { fuzzyScore, normalizeSearch } from "~/lib/search";
+import {
+  fetchIvrSubage,
+  fetchIvrUserByLoginOrId,
+  fetchIvrUsers,
+  type IvrUser,
+  type Relation,
+} from "~/lib/twitch-ivr";
 import type { Mode, Scope, TierEntry, TierResponse } from "~/types/tiers";
 
 const channel = ref("zakvielchannel");
@@ -38,21 +48,6 @@ const availableModesMap = ref<Record<Scope, Mode[]>>({
 });
 const availableModes = computed(() => availableModesMap.value[scope.value] || []);
 
-type IvrUser = {
-  id: string;
-  login: string;
-  displayName: string;
-  logo?: string;
-  followers?: number | null;
-  createdAt?: string;
-  roles?: {
-    isAffiliate?: boolean;
-    isPartner?: boolean;
-    isStaff?: boolean | null;
-  };
-};
-
-type Relation = { followedAt?: string; subMonths?: number; subEnd?: string };
 const profiles = reactive<Record<string, { displayName: string; login: string; logo?: string }>>(
   {},
 );
@@ -64,93 +59,28 @@ const userError = ref<string | null>(null);
 const showProfile = ref(false);
 
 const tierColors = reactive<Record<string, string>>({ ...defaultTierColors });
-const prefetchIndex = ref(0);
 const tableAnimationSeed = ref(0);
 const tableRef = ref<{
   wrapEl: HTMLElement | null;
   sentinelEl: HTMLElement | null;
 } | null>(null);
-let prefetchObserver: IntersectionObserver | null = null;
-let scrollEl: HTMLElement | null = null;
-let isPrefetching = false;
+const wrapElRef = computed(() => tableRef.value?.wrapEl ?? null);
+const sentinelElRef = computed(() => tableRef.value?.sentinelEl ?? null);
 
 const { loadRoles, avatarClasses } = useRoles();
-const route = useRoute();
-const router = useRouter();
-
-const firstQueryValue = (value: unknown) => (Array.isArray(value) ? value[0] : value);
-const getQueryString = (...keys: string[]) => {
-  for (const key of keys) {
-    const value = firstQueryValue(route.query[key]);
-    if (typeof value === "string" && value.trim()) {
-      return value.trim();
-    }
-  }
-  return "";
-};
-
-const plural = (n: number, forms: [string, string, string]) => {
-  const abs = Math.abs(n) % 100;
-  const d = abs % 10;
-  if (abs > 10 && abs < 20) return forms[2];
-  if (d > 1 && d < 5) return forms[1];
-  if (d === 1) return forms[0];
-  return forms[2];
-};
-
-const humanizeFromDate = (iso?: string) => {
-  if (!iso) return "-";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "-";
-  const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
-  const days = Math.max(0, Math.floor(diffMs / 86400000));
-  const yearsDiff = Math.floor(days / 365);
-  const monthsDiff = Math.floor((days % 365) / 30);
-  const parts: string[] = [];
-  if (yearsDiff) parts.push(`${yearsDiff} ${plural(yearsDiff, ["год", "года", "лет"])}`);
-  if (monthsDiff) parts.push(`${monthsDiff} ${plural(monthsDiff, ["месяц", "месяца", "месяцев"])}`);
-  if (!parts.length) parts.push("меньше месяца");
-  return `${d.toLocaleDateString("ru-RU")} · ${parts.join(" ")} назад`;
-};
-
-const humanizeMonths = (months?: number) => {
-  if (months == null) return "-";
-  const y = Math.floor(months / 12);
-  const m = months % 12;
-  const parts: string[] = [];
-  if (y) parts.push(`${y} ${plural(y, ["год", "года", "лет"])}`);
-  if (m) parts.push(`${m} ${plural(m, ["месяц", "месяца", "месяцев"])}`);
-  const base = parts.length ? parts.join(" ") : `${months} мес`;
-  return `${months} мес (${base})`;
-};
-const formatHours = (count: number, minutes: number) => {
-  const hours = (count * minutes) / 60;
-  return `${hours.toFixed(1)}h`;
-};
 
 const fetchProfiles = async (ids: string[]) => {
   if (!ids.length) return;
   const uniq = ids.filter((id) => !profiles[id]);
   if (!uniq.length) return;
-  const chunkSize = 25;
-  for (let i = 0; i < uniq.length; i += chunkSize) {
-    const chunk = uniq.slice(i, i + chunkSize);
-    try {
-      const res = await $fetch<IvrUser[]>(
-        `https://api.ivr.fi/v2/twitch/user?id=${chunk.join(",")}`,
-      );
-      res.forEach((u) => {
-        profiles[u.id] = {
-          displayName: u.displayName,
-          login: u.login,
-          logo: u.logo,
-        };
-      });
-    } catch {
-      /* ignore */
-    }
-  }
+  const users = await fetchIvrUsers(uniq);
+  users.forEach((u) => {
+    profiles[u.id] = {
+      displayName: u.displayName,
+      login: u.login,
+      logo: u.logo,
+    };
+  });
 };
 
 const fetchRelations = async (ids: string[]) => {
@@ -160,18 +90,7 @@ const fetchRelations = async (ids: string[]) => {
   for (const id of top) {
     const prof = profiles[id];
     if (!prof || relations[id]) continue;
-    try {
-      const res: any = await $fetch(
-        `https://api.ivr.fi/v2/twitch/subage/${prof.login}/${channelLogin}`,
-      );
-      relations[id] = {
-        followedAt: res?.followedAt || undefined,
-        subMonths: res?.cumulative?.months ?? undefined,
-        subEnd: res?.cumulative?.end || undefined,
-      };
-    } catch {
-      relations[id] = {};
-    }
+    relations[id] = await fetchIvrSubage(prof.login, channelLogin);
   }
 };
 
@@ -183,28 +102,19 @@ const lookupUserRemotely = async (termOverride?: string) => {
   if (!term) return;
   userLoading.value = true;
   try {
-    const isId = /^\d+$/.test(term);
-    const primaryUrl = isId
-      ? `https://api.ivr.fi/v2/twitch/user?id=${encodeURIComponent(term)}`
-      : `https://api.ivr.fi/v2/twitch/user?login=${encodeURIComponent(term)}`;
-    let res = await $fetch<IvrUser[]>(primaryUrl);
-    if ((!res || !res.length) && !isId) {
-      res = await $fetch<IvrUser[]>(
-        `https://api.ivr.fi/v2/twitch/user?id=${encodeURIComponent(term)}`,
-      );
-    }
-    userData.value = res?.[0] ?? null;
-    if (!res?.length) {
+    const found = await fetchIvrUserByLoginOrId(term);
+    userData.value = found;
+    if (!found) {
       userError.value = "Not found";
       showProfile.value = false;
     } else {
       showProfile.value = true;
-      const foundId = res[0]?.id;
+      const foundId = found.id;
       if (foundId) {
         profiles[foundId] = {
-          displayName: res[0]?.displayName || res[0]?.login || foundId,
-          login: res[0]?.login || foundId,
-          logo: res[0]?.logo,
+          displayName: found.displayName || found.login || foundId,
+          login: found.login || foundId,
+          logo: found.logo,
         };
       }
       const rel = foundId ? relations[foundId] : null;
@@ -215,40 +125,14 @@ const lookupUserRemotely = async (termOverride?: string) => {
     }
   } catch (e: unknown) {
     const msg =
-      typeof e === "object" && e && "message" in e && (e as any).message
-        ? String((e as any).message)
+      typeof e === "object" && e && "message" in e && (e as { message?: unknown }).message
+        ? String((e as { message?: unknown }).message)
         : "Request failed";
     userError.value = msg;
     showProfile.value = false;
   } finally {
     userLoading.value = false;
   }
-};
-
-const normalizeSearch = (value?: string | null) =>
-  String(value || "")
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, " ");
-
-const fuzzyScore = (query: string, target: string) => {
-  if (!query || !target) return -1;
-  if (target === query) return 1200;
-  if (target.startsWith(query)) return 950 - (target.length - query.length);
-  if (target.includes(query)) return 700 - (target.length - query.length);
-
-  let score = 0;
-  let qIndex = 0;
-  let consecutive = 0;
-
-  for (let i = 0; i < target.length && qIndex < query.length; i += 1) {
-    if (target[i] !== query[qIndex]) continue;
-    consecutive += 1;
-    score += 32 + consecutive * 14;
-    qIndex += 1;
-  }
-
-  return qIndex === query.length ? score - (target.length - query.length) * 2 : -1;
 };
 
 const filteredEntries = computed(() => {

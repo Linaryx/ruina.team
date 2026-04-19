@@ -44,6 +44,40 @@ const formatDate = (value?: string | number | Date | null) => {
 const tagColor = (index: string | number) => `tag-${(Number(index) % 3) + 1}`;
 
 const bodyRef = ref<HTMLElement | null>(null);
+const lightboxImages = ref<string[]>([]);
+const lightboxIndex = ref(0);
+const lightboxVisible = ref(false);
+
+const decorateImages = () => {
+  const el = bodyRef.value;
+  if (!el) return;
+  const imgs = el.querySelectorAll<HTMLImageElement>("img");
+  imgs.forEach((img) => {
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.classList.add("zoomable");
+  });
+};
+
+const onBodyClick = (event: MouseEvent) => {
+  const target = event.target as HTMLElement | null;
+  if (!target || target.tagName !== "IMG") return;
+  const el = bodyRef.value;
+  if (!el) return;
+  const imgs = Array.from(el.querySelectorAll<HTMLImageElement>("img"));
+  const srcs = imgs.map((img) => img.src).filter(Boolean);
+  const clicked = target as HTMLImageElement;
+  const i = imgs.indexOf(clicked);
+  if (i < 0 || !srcs.length) return;
+  lightboxImages.value = srcs;
+  lightboxIndex.value = i;
+  lightboxVisible.value = true;
+};
+
+const hideLightbox = () => {
+  lightboxVisible.value = false;
+};
+
 const applyAnchorClasses = () => {
   const el = bodyRef.value;
   if (!el) return;
@@ -51,13 +85,18 @@ const applyAnchorClasses = () => {
   headingAnchors.forEach((a) => a.classList.add("heading-anchor"));
 };
 
+const refreshBody = () => {
+  applyAnchorClasses();
+  decorateImages();
+};
+
 onMounted(() => {
-  nextTick(applyAnchorClasses);
+  nextTick(refreshBody);
 });
 
 watch(
   () => guide.value?._path,
-  () => nextTick(applyAnchorClasses),
+  () => nextTick(refreshBody),
 );
 </script>
 
@@ -105,9 +144,23 @@ watch(
       </div>
     </header>
 
-    <section class="guide-body surface-panel surface-panel--padded" ref="bodyRef">
+    <section
+      class="guide-body surface-panel surface-panel--padded"
+      ref="bodyRef"
+      @click="onBodyClick"
+    >
       <ContentRenderer :value="guide" />
     </section>
+
+    <ClientOnly>
+      <GuideLightbox
+        :visible="lightboxVisible"
+        :imgs="lightboxImages"
+        :index="lightboxIndex"
+        @hide="hideLightbox"
+        @update:index="lightboxIndex = $event"
+      />
+    </ClientOnly>
 
     <footer class="guide-nav" v-if="prevLink || nextLink">
       <NuxtLink v-if="prevLink" :to="prevLink._path" class="btn ghost"
@@ -318,7 +371,23 @@ watch(
   height: auto;
   display: block;
   border-radius: 10px;
-  margin: 12px 0;
+  margin: 14px 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.guide-body :deep(img.zoomable) {
+  cursor: zoom-in;
+}
+
+.guide-body :deep(img.zoomable:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 .guide-nav {

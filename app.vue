@@ -9,18 +9,12 @@ const isChatTiers = computed(() => route.path.startsWith("/chat-tiers"));
 const isLoading = ref(true);
 
 onMounted(async () => {
-  await Promise.all([waitForMinimumLoad(), preloadCriticalAssets()]);
+  await preloadCriticalAssets();
   isLoading.value = false;
   window.setTimeout(() => {
     appReady.value = true;
-  }, 360);
+  }, 240);
 });
-
-function waitForMinimumLoad() {
-  return new Promise((resolve) => {
-    window.setTimeout(resolve, 1300);
-  });
-}
 
 async function preloadCriticalAssets() {
   const tasks: Promise<unknown>[] = criticalAssets.map((src) => preloadImage(src));

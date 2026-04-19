@@ -61,7 +61,9 @@ export const useRoles = () => {
       const roles = await $fetch<{
         moderators?: unknown[];
         vips?: unknown[];
-      }>(`/api-cache/roles/${encodeURIComponent(chan)}.json`).catch(() => ({}));
+      }>(`/api-cache/roles/${encodeURIComponent(chan)}.json`).catch(
+        () => ({ moderators: [], vips: [] }) as { moderators: unknown[]; vips: unknown[] },
+      );
 
       fillRoleSet(mods, roles.moderators);
       fillRoleSet(vips, roles.vips);
