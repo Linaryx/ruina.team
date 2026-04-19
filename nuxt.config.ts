@@ -96,7 +96,6 @@ export default defineNuxtConfig({
   },
   routeRules: {
     "/guides/**": { prerender: true },
-    "/modpacks/**": { prerender: true },
   },
   nitro: {
     preset: "github-pages",
@@ -124,7 +123,7 @@ export default defineNuxtConfig({
       ],
     },
     prerender: {
-      routes: Array.from(new Set(["/", "/guides", "/modpacks", ...contentRoutes])),
+      routes: Array.from(new Set(["/", "/guides", ...contentRoutes])),
       crawlLinks: true,
     },
   },
