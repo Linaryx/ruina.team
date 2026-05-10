@@ -3,6 +3,25 @@ import { ofetch } from "ofetch";
 import type { Mode, Scope, TierResponse } from "~/types/tiers";
 import { useSupabaseClient } from "./supabase";
 
+const SUPABASE_PAGE_SIZE = 1000;
+
+type SnapshotTotalsRow = {
+  total_users: number | null;
+  total_messages: number | null;
+  total_unique_messages: number | null;
+  entries: TierResponse["entries"] | null;
+};
+
+type SnapshotPeriodRow = {
+  scope: Scope | null;
+  period_key: string | number | null;
+  mode: Mode | null;
+};
+
+type SnapshotChannelRow = {
+  channel: string | null;
+};
+
 type AvailableResult = {
   years: Record<Scope, number[]>;
   months: Record<number, number[]>;
@@ -53,6 +72,8 @@ export async function fetchTiers(params: TiersParams): Promise<TierResponse | nu
 export async function fetchTiersSupabase(params: TiersParams): Promise<TierResponse | null> {
   const { channel, scope, year, month, day, mode = "all" } = params;
   if (!channel.trim()) return null;
+  if (scope === "month" && month == null) return null;
+  if (scope === "day" && (month == null || day == null)) return null;
 
   const sb = useSupabaseClient();
   const period_key =
@@ -64,15 +85,17 @@ export async function fetchTiersSupabase(params: TiersParams): Promise<TierRespo
 
   const { data, error } = await sb
     .from("tiers_snapshots")
-    .select("*")
+    .select("total_users,total_messages,total_unique_messages,entries")
     .eq("channel", channel)
     .eq("scope", scope)
     .eq("mode", mode)
     .eq("period_key", period_key)
-    .limit(1);
+    .order("id", { ascending: false })
+    .limit(1)
+    .maybeSingle<SnapshotTotalsRow>();
 
   if (error) throw error;
-  const row = data?.[0];
+  const row = data;
   if (!row) return null;
 
   return {
@@ -80,10 +103,10 @@ export async function fetchTiersSupabase(params: TiersParams): Promise<TierRespo
     month,
     day,
     timezone: "Europe/Moscow",
-    totalUsers: row.total_users,
-    totalMessages: row.total_messages,
-    totalUniqueMessages: row.total_unique_messages,
-    entries: row.entries,
+    totalUsers: row.total_users ?? 0,
+    totalMessages: row.total_messages ?? 0,
+    totalUniqueMessages: row.total_unique_messages ?? 0,
+    entries: row.entries ?? [],
   };
 }
 
@@ -96,12 +119,19 @@ export async function fetchAvailablePeriods(channel: string): Promise<AvailableR
     };
   }
   const sb = useSupabaseClient();
-  const { data, error } = await sb
-    .from("tiers_snapshots")
-    .select("scope,period_key,mode")
-    .eq("channel", channel);
+  const rows: SnapshotPeriodRow[] = [];
+  for (let from = 0; ; from += SUPABASE_PAGE_SIZE) {
+    const { data, error } = await sb
+      .from("tiers_snapshots")
+      .select("scope,period_key,mode")
+      .eq("channel", channel)
+      .range(from, from + SUPABASE_PAGE_SIZE - 1);
 
-  if (error) throw error;
+    if (error) throw error;
+    const batch = (data ?? []) as SnapshotPeriodRow[];
+    rows.push(...batch);
+    if (batch.length < SUPABASE_PAGE_SIZE) break;
+  }
 
   const years: Record<Scope, Set<number>> = {
     year: new Set<number>(),
@@ -117,10 +147,10 @@ export async function fetchAvailablePeriods(channel: string): Promise<AvailableR
 
   const modeOrder: Mode[] = ["all", "online", "offline"];
 
-  (data || []).forEach((row: any) => {
-    const scope = row?.scope as Scope | undefined;
+  rows.forEach((row) => {
+    const scope = row.scope || undefined;
     const key = String(row?.period_key || "");
-    const mode = row?.mode as Mode | undefined;
+    const mode = row.mode || undefined;
     const y = parseInt(key.slice(0, 4), 10);
     const m = parseInt(key.slice(4, 6), 10);
     if (!Number.isFinite(y) || !scope) return;
@@ -159,14 +189,23 @@ export async function fetchAvailablePeriods(channel: string): Promise<AvailableR
 
 export async function fetchAvailableChannels(): Promise<AvailableChannelsResult> {
   const sb = useSupabaseClient();
-  const { data, error } = await sb
-    .from("tiers_snapshots")
-    .select("channel", { count: "exact", head: false });
+  const rows: SnapshotChannelRow[] = [];
+  for (let from = 0; ; from += SUPABASE_PAGE_SIZE) {
+    const { data, error } = await sb
+      .from("tiers_snapshots")
+      .select("channel")
+      .order("channel", { ascending: true })
+      .range(from, from + SUPABASE_PAGE_SIZE - 1);
 
-  if (error) throw error;
+    if (error) throw error;
+    const batch = (data ?? []) as SnapshotChannelRow[];
+    rows.push(...batch);
+    if (batch.length < SUPABASE_PAGE_SIZE) break;
+  }
+
   const set = new Set<string>();
-  (data || []).forEach((row: any) => {
-    const ch = (row?.channel || "").toString().trim();
+  rows.forEach((row) => {
+    const ch = (row.channel || "").toString().trim();
     if (ch) set.add(ch);
   });
   return { channels: Array.from(set).sort() };
