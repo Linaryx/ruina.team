@@ -160,6 +160,17 @@ const displayedEntries = computed(() =>
   activeSearch.value.trim() ? filteredEntries.value : data.value?.entries || [],
 );
 
+const {
+  prefetchMore: prefetchMoreProfiles,
+  setup: setupPrefetchObserver,
+  resetIndex: resetPrefetchIndex,
+} = usePrefetchRows({
+  fetchBatch: fetchProfiles,
+  getIds: () => rankedEntries.value.map((entry) => entry.userId),
+  wrapEl: wrapElRef,
+  sentinelEl: sentinelElRef,
+});
+
 const openProfile = async (userId: string) => {
   const entry = data.value?.entries.find((e: TierEntry) => e.userId === userId);
   const prof = profiles[userId];
@@ -201,47 +212,14 @@ const latestMonthlySelection = computed(() => {
   return null;
 });
 
-const syncFromQuery = () => {
-  hadInitialPeriodQuery.value =
-    !!getQueryString("sc", "scope") ||
-    !!getQueryString("y", "year") ||
-    !!getQueryString("mo", "month") ||
-    !!getQueryString("m", "mode");
-
-  const queryChannel = getQueryString("c", "channel");
-  const queryScope = getQueryString("sc", "scope");
-  const queryYear = getQueryString("y", "year");
-  const queryMonth = getQueryString("mo", "month");
-  const queryMode = getQueryString("m", "mode");
-
-  if (queryChannel) channel.value = queryChannel;
-  if (queryScope === "year" || queryScope === "month") scope.value = queryScope;
-  const y = Number(queryYear);
-  if (Number.isFinite(y) && y > 2000) year.value = y;
-  const m = Number(queryMonth);
-  if (Number.isFinite(m) && m >= 1 && m <= 12) month.value = m;
-  if (queryMode === "all" || queryMode === "online" || queryMode === "offline") {
-    mode.value = queryMode;
-  }
-};
-
-const pushQuery = () => {
-  const query: Record<string, string> = {
-    c: channel.value,
-    sc: scope.value,
-    y: String(year.value),
-  };
-
-  if (scope.value !== "year") {
-    query.mo = String(month.value);
-  }
-
-  query.m = mode.value;
-
-  router.replace({
-    query,
-  });
-};
+const { syncFromQuery, pushQuery } = useChatTiersQuery({
+  channel,
+  scope,
+  year,
+  month,
+  mode,
+  hadInitialPeriodQuery,
+});
 
 const alignToAvailable = (preferLatestMonth = false) => {
   if (availableChannels.value.length && !availableChannels.value.includes(channel.value)) {
@@ -320,7 +298,7 @@ const loadTiers = async () => {
     mode: mode.value,
   });
   tableAnimationSeed.value += 1;
-  prefetchIndex.value = 0;
+  resetPrefetchIndex();
   await prefetchMoreProfiles();
 };
 
@@ -409,66 +387,10 @@ watch(
   () => pushQuery(),
 );
 
-const prefetchMoreProfiles = async () => {
-  if (isPrefetching) return;
-  if (!rankedEntries.value.length) return;
-  const entries = rankedEntries.value;
-  const start = 50 + prefetchIndex.value * 25;
-  if (start >= entries.length) return;
-  isPrefetching = true;
-  const slice = entries.slice(start, start + 25).map((e) => e.userId);
-  await fetchProfiles(slice);
-  prefetchIndex.value += 1;
-  isPrefetching = false;
-};
-
-const setupPrefetchObserver = () => {
-  const wrap = tableRef.value?.wrapEl;
-  const sentinel = tableRef.value?.sentinelEl;
-  scrollEl = wrap || null;
-  if (!wrap || !sentinel) return;
-  if (prefetchObserver) {
-    prefetchObserver.disconnect();
-  }
-  const handleIntersect: IntersectionObserverCallback = (entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        prefetchMoreProfiles();
-      }
-    });
-  };
-  prefetchObserver = new IntersectionObserver(handleIntersect, {
-    root: wrap,
-    threshold: 0.3,
-  });
-  prefetchObserver.observe(sentinel);
-
-  wrap.removeEventListener("scroll", handleScroll, { passive: true } as any);
-  wrap.addEventListener("scroll", handleScroll, { passive: true });
-};
-
-const handleScroll = () => {
-  if (!scrollEl) return;
-  const maxScroll = scrollEl.scrollHeight - scrollEl.clientHeight || 1;
-  const progress = Math.min(1, scrollEl.scrollTop / maxScroll);
-  if (progress > 0.7) {
-    prefetchMoreProfiles();
-  }
-};
-
 onMounted(async () => {
   syncFromQuery();
   await loadAvailable(!hadInitialPeriodQuery.value);
   setupPrefetchObserver();
-});
-
-onBeforeUnmount(() => {
-  if (prefetchObserver) {
-    prefetchObserver.disconnect();
-  }
-  if (scrollEl) {
-    scrollEl.removeEventListener("scroll", handleScroll);
-  }
 });
 
 const periodText = computed(() => {
@@ -509,8 +431,9 @@ const errorText = computed(() => {
   const val = error.value;
   if (!val) return "";
   if (typeof val === "string") return val;
-  if (typeof val === "object" && "message" in val && val?.message) {
-    return String((val as any).message);
+  if (typeof val === "object" && "message" in val) {
+    const message = val.message;
+    if (message) return String(message);
   }
   return String(val);
 });
