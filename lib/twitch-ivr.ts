@@ -69,9 +69,7 @@ export async function fetchIvrUserByLoginOrId(term: string): Promise<IvrUser | n
 // Безопасный запрос subage — на любую ошибку возвращаем пустой объект.
 export async function fetchIvrSubage(login: string, channel: string): Promise<Relation> {
   try {
-    const res = await ofetch<IvrSubageResponse>(
-      `${IVR_BASE}/subage/${login}/${channel}`,
-    );
+    const res = await ofetch<IvrSubageResponse>(`${IVR_BASE}/subage/${login}/${channel}`);
     return {
       followedAt: res?.followedAt || undefined,
       subMonths: res?.cumulative?.months ?? undefined,

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch, onMounted } from "vue";
+import { computed, onBeforeUnmount, reactive, ref, watch, onMounted } from "vue";
 import TierControls from "~/components/chat-tiers/TierControls.vue";
 import TierSummary from "~/components/chat-tiers/TierSummary.vue";
 import TierTable from "~/components/chat-tiers/TierTable.vue";
@@ -32,6 +32,8 @@ const scope = ref<Scope>("month");
 const mode = ref<Mode>("online");
 const hadInitialPeriodQuery = ref(false);
 const isInitializing = ref(true);
+const canSyncQuery = ref(false);
+let querySyncTimer: ReturnType<typeof setTimeout> | null = null;
 const availableYearsMap = ref<Record<Scope, number[]>>({
   year: [],
   month: [],
@@ -214,7 +216,7 @@ const latestMonthlySelection = computed(() => {
   return null;
 });
 
-const { syncFromQuery, pushQuery } = useChatTiersQuery({
+const { hasQuery, syncFromQuery, pushQuery } = useChatTiersQuery({
   channel,
   scope,
   year,
@@ -222,6 +224,59 @@ const { syncFromQuery, pushQuery } = useChatTiersQuery({
   mode,
   hadInitialPeriodQuery,
 });
+
+const isChatTiersDebugEnabled = () =>
+  typeof window !== "undefined" &&
+  (["localhost", "127.0.0.1"].includes(window.location.hostname) ||
+    new URLSearchParams(window.location.search).get("debug") === "tiers" ||
+    new URLSearchParams(window.location.search).get("debug") === "1");
+
+const debugState = (event: string, payload: Record<string, unknown> = {}) => {
+  if (!isChatTiersDebugEnabled()) return;
+  console.debug(`[chat-tiers:page] ${event}`, {
+    ...payload,
+    location: typeof window === "undefined" ? "" : window.location.href,
+    state: {
+      channel: channel.value,
+      scope: scope.value,
+      year: year.value,
+      month: month.value,
+      mode: mode.value,
+      isInitializing: isInitializing.value,
+      canSyncQuery: canSyncQuery.value,
+      hadInitialPeriodQuery: hadInitialPeriodQuery.value,
+    },
+    available: {
+      channels: availableChannels.value,
+      scopes: availableScopes.value,
+      years: availableYears.value,
+      months: availableMonths.value,
+      modes: availableModes.value,
+    },
+  });
+};
+
+const syncQuery = (reason: string) => {
+  if (isInitializing.value || !canSyncQuery.value) {
+    debugState("syncQuery:blocked", { reason });
+    return;
+  }
+
+  if (querySyncTimer) {
+    clearTimeout(querySyncTimer);
+  }
+
+  debugState("syncQuery:scheduled", { reason });
+  querySyncTimer = setTimeout(() => {
+    querySyncTimer = null;
+    if (!isInitializing.value && canSyncQuery.value) {
+      debugState("syncQuery:flush", { reason });
+      pushQuery(reason);
+    } else {
+      debugState("syncQuery:flush-blocked", { reason });
+    }
+  }, 350);
+};
 
 const alignToAvailable = (preferLatestMonth = false) => {
   let yearWasAdjusted = false;
@@ -253,6 +308,7 @@ const alignToAvailable = (preferLatestMonth = false) => {
 };
 
 const loadAvailable = async (preferLatestMonth = false, preserveSelection = false) => {
+  debugState("loadAvailable:start", { preferLatestMonth, preserveSelection });
   try {
     const [chRes, res] = await Promise.all([
       fetchAvailableChannels(),
@@ -267,6 +323,7 @@ const loadAvailable = async (preferLatestMonth = false, preserveSelection = fals
     if (res.years.month.length) scopes.push("month");
     availableScopes.value = scopes;
     if (preserveSelection) {
+      debugState("loadAvailable:preserved", { preferLatestMonth, preserveSelection });
       return;
     }
     if (availableScopes.value.length === 1) {
@@ -275,7 +332,9 @@ const loadAvailable = async (preferLatestMonth = false, preserveSelection = fals
       scope.value = availableScopes.value[0] || "year";
     }
     alignToAvailable(preferLatestMonth);
+    debugState("loadAvailable:aligned", { preferLatestMonth, preserveSelection });
   } catch {
+    debugState("loadAvailable:error", { preferLatestMonth, preserveSelection });
     availableChannels.value = [];
     availableYearsMap.value = {
       year: [],
@@ -318,7 +377,10 @@ const canAttemptExplicitLoad = computed(() => {
   if (!channel.value.trim()) return false;
   if (scope.value !== "year" && scope.value !== "month") return false;
   if (!Number.isFinite(year.value) || year.value <= 2000) return false;
-  if (scope.value === "month" && (!Number.isFinite(month.value) || month.value < 1 || month.value > 12)) {
+  if (
+    scope.value === "month" &&
+    (!Number.isFinite(month.value) || month.value < 1 || month.value > 12)
+  ) {
     return false;
   }
   return mode.value === "all" || mode.value === "online" || mode.value === "offline";
@@ -349,7 +411,13 @@ const reload = async ({
   refreshAvailable = true,
   syncUrl = true,
 }: ReloadOptions = {}) => {
+  debugState("reload:start", { allowExplicitSelection, refreshAvailable, syncUrl });
   if (allowExplicitSelection ? !canAttemptExplicitLoad.value : !canReload.value) {
+    debugState("reload:blocked", {
+      allowExplicitSelection,
+      canAttemptExplicitLoad: canAttemptExplicitLoad.value,
+      canReload: canReload.value,
+    });
     hasAttemptedLoad.value = true;
     return;
   }
@@ -368,17 +436,20 @@ const reload = async ({
     await loadTiers();
     await rolesPromise;
     if (syncUrl) {
-      pushQuery();
+      pushQuery("reload");
     }
   } catch (e: unknown) {
+    debugState("reload:error", { error: e });
     error.value = e;
   } finally {
+    debugState("reload:done", { allowExplicitSelection, refreshAvailable, syncUrl });
     hasAttemptedLoad.value = true;
     pending.value = false;
   }
 };
 
 const loadInitial = async (preserveInitialPeriod: boolean, preserveInitialUrl: boolean) => {
+  debugState("loadInitial:start", { preserveInitialPeriod, preserveInitialUrl });
   if (preserveInitialPeriod) {
     const availablePromise = loadAvailable(false, true);
     setupPrefetchObserver();
@@ -390,6 +461,7 @@ const loadInitial = async (preserveInitialPeriod: boolean, preserveInitialUrl: b
         syncUrl: false,
       }),
     ]);
+    debugState("loadInitial:done-explicit", { preserveInitialPeriod, preserveInitialUrl });
     return;
   }
 
@@ -399,18 +471,16 @@ const loadInitial = async (preserveInitialPeriod: boolean, preserveInitialUrl: b
     refreshAvailable: false,
     syncUrl: false,
   });
-
-  if (!preserveInitialUrl) {
-    pushQuery();
-  }
+  debugState("loadInitial:done-default", { preserveInitialPeriod, preserveInitialUrl });
 };
 
 watch(
   () => year.value,
   () => {
     if (isInitializing.value) return;
+    debugState("watch:year");
     alignToAvailable();
-    pushQuery();
+    syncQuery("watch:year");
   },
 );
 
@@ -418,8 +488,9 @@ watch(
   () => channel.value,
   async () => {
     if (isInitializing.value) return;
+    debugState("watch:channel");
     await loadAvailable(true);
-    pushQuery();
+    syncQuery("watch:channel");
   },
 );
 
@@ -427,8 +498,9 @@ watch(
   () => scope.value,
   () => {
     if (isInitializing.value) return;
+    debugState("watch:scope");
     alignToAvailable();
-    pushQuery();
+    syncQuery("watch:scope");
   },
 );
 
@@ -436,19 +508,38 @@ watch(
   () => [month.value, mode.value],
   () => {
     if (isInitializing.value) return;
-    pushQuery();
+    debugState("watch:month-mode");
+    syncQuery("watch:month-mode");
   },
 );
 
 onMounted(async () => {
+  debugState("mounted:start");
   const initialQuery = await syncFromQuery();
   const preserveInitialPeriod = initialQuery.hadInitialPeriodQuery;
   const preserveInitialUrl = initialQuery.hadInitialQuery;
+  debugState("mounted:after-syncFromQuery", { initialQuery });
 
   try {
     await loadInitial(preserveInitialPeriod, preserveInitialUrl);
   } finally {
     isInitializing.value = false;
+    debugState("mounted:init-unlocked", { preserveInitialUrl });
+    setTimeout(() => {
+      canSyncQuery.value = true;
+      debugState("mounted:query-sync-unlocked", { preserveInitialUrl });
+      if (!preserveInitialUrl && !hasQuery()) {
+        syncQuery("initial-default-url");
+      } else if (!preserveInitialUrl) {
+        debugState("mounted:skip-initial-default-url-late-query");
+      }
+    }, 500);
+  }
+});
+
+onBeforeUnmount(() => {
+  if (querySyncTimer) {
+    clearTimeout(querySyncTimer);
   }
 });
 
@@ -564,8 +655,8 @@ const errorText = computed(() => {
     <section v-else-if="hasAttemptedLoad && !pending && !data" class="card empty-state">
       <p class="value">Данных для выбранной статистики нет.</p>
       <p class="muted">
-        Проверьте канал, период и режим чата. Если вы открыли ссылку вручную, параметры URL не
-        будут автоматически заменены на другие.
+        Проверьте канал, период и режим чата. Если вы открыли ссылку вручную, параметры URL не будут
+        автоматически заменены на другие.
       </p>
     </section>
 

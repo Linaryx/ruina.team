@@ -47,9 +47,7 @@
     <label>
       <span>Режим чата</span>
       <select v-model="modeModel" :disabled="!modeOptionsComputed.length">
-        <option v-if="!modeOptionsComputed.length" :value="modeModel">
-          Нет доступных режимов
-        </option>
+        <option v-if="!modeOptionsComputed.length" :value="modeModel">Нет доступных режимов</option>
         <option v-for="opt in modeOptionsComputed" :key="opt.value" :value="opt.value">
           {{ opt.label }}
         </option>

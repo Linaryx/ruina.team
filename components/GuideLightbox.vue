@@ -58,12 +58,7 @@ const onBackdropClick = (event: MouseEvent) => {
             <path d="M6 6l12 12M18 6L6 18" />
           </svg>
         </button>
-        <button
-          v-if="canNav"
-          class="lb-btn lb-prev"
-          aria-label="Предыдущее"
-          @click.stop="go(-1)"
-        >
+        <button v-if="canNav" class="lb-btn lb-prev" aria-label="Предыдущее" @click.stop="go(-1)">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M15 6l-6 6 6 6" />
           </svg>

@@ -21,40 +21,40 @@
     "**/node_modules",
     "**/.cache",
     "**/.nuxt",
-    "**/dist",
+    "**/dist"
   ],
   "languages": {
     "JavaScript": {
       "formatter": {
         "external": {
           "command": "bun",
-          "arguments": ["x", "oxfmt", "--stdin-filepath", "{buffer_path}"],
-        },
-      },
+          "arguments": ["x", "oxfmt", "--stdin-filepath", "{buffer_path}"]
+        }
+      }
     },
     "TypeScript": {
       "formatter": {
         "external": {
           "command": "bun",
-          "arguments": ["x", "oxfmt", "--stdin-filepath", "{buffer_path}"],
-        },
-      },
+          "arguments": ["x", "oxfmt", "--stdin-filepath", "{buffer_path}"]
+        }
+      }
     },
     "JSON": {
       "formatter": {
         "external": {
           "command": "bun",
-          "arguments": ["x", "oxfmt", "--stdin-filepath", "{buffer_path}"],
-        },
-      },
+          "arguments": ["x", "oxfmt", "--stdin-filepath", "{buffer_path}"]
+        }
+      }
     },
     "Vue.js": {
       "formatter": {
         "external": {
           "command": "bun",
-          "arguments": ["x", "oxfmt", "--stdin-filepath", "{buffer_path}"],
-        },
-      },
-    },
-  },
+          "arguments": ["x", "oxfmt", "--stdin-filepath", "{buffer_path}"]
+        }
+      }
+    }
+  }
 }
