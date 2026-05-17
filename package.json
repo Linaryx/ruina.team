@@ -6,7 +6,7 @@
     "#internal/nuxt/paths": "./lib/nuxt-paths-proxy.mjs"
   },
   "scripts": {
-    "dev": "nuxt dev",
+    "dev": "nuxt dev --host",
     "clean": "bun scripts/clean-output.ts",
     "build": "bun run clean && nuxt generate",
     "preview": "sirv dist/public -p 4173",

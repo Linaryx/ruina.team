@@ -34,7 +34,9 @@ export const useChatTiersQuery = ({
     return "";
   };
 
-  const syncFromQuery = () => {
+  const syncFromQuery = async () => {
+    await router.isReady();
+
     const hadInitialChannelQuery = !!getQueryString("c", "channel");
     hadInitialPeriodQuery.value =
       !!getQueryString("sc", "scope") ||

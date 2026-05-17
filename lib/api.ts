@@ -42,6 +42,9 @@ type TiersParams = {
   excludeBots?: string;
 };
 
+let availableChannelsCache: Promise<AvailableChannelsResult> | null = null;
+const availablePeriodsCache = new Map<string, Promise<AvailableResult>>();
+
 export const useApiBase = () => {
   const config = useRuntimeConfig();
   return config.public.apiBase || "";
@@ -111,13 +114,26 @@ export async function fetchTiersSupabase(params: TiersParams): Promise<TierRespo
 }
 
 export async function fetchAvailablePeriods(channel: string): Promise<AvailableResult> {
-  if (!channel.trim()) {
+  const normalizedChannel = channel.trim();
+  if (!normalizedChannel) {
     return {
       years: { year: [], month: [], day: [] },
       months: {},
       modes: { year: [], month: [], day: [] },
     };
   }
+  const cached = availablePeriodsCache.get(normalizedChannel);
+  if (cached) return cached;
+
+  const promise = fetchAvailablePeriodsUncached(normalizedChannel).catch((error) => {
+    availablePeriodsCache.delete(normalizedChannel);
+    throw error;
+  });
+  availablePeriodsCache.set(normalizedChannel, promise);
+  return promise;
+}
+
+async function fetchAvailablePeriodsUncached(channel: string): Promise<AvailableResult> {
   const sb = useSupabaseClient();
   const rows: SnapshotPeriodRow[] = [];
   for (let from = 0; ; from += SUPABASE_PAGE_SIZE) {
@@ -188,6 +204,16 @@ export async function fetchAvailablePeriods(channel: string): Promise<AvailableR
 }
 
 export async function fetchAvailableChannels(): Promise<AvailableChannelsResult> {
+  if (availableChannelsCache) return availableChannelsCache;
+
+  availableChannelsCache = fetchAvailableChannelsUncached().catch((error) => {
+    availableChannelsCache = null;
+    throw error;
+  });
+  return availableChannelsCache;
+}
+
+async function fetchAvailableChannelsUncached(): Promise<AvailableChannelsResult> {
   const sb = useSupabaseClient();
   const rows: SnapshotChannelRow[] = [];
   for (let from = 0; ; from += SUPABASE_PAGE_SIZE) {

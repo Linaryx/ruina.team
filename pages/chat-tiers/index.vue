@@ -222,9 +222,6 @@ const { syncFromQuery, pushQuery } = useChatTiersQuery({
   mode,
   hadInitialPeriodQuery,
 });
-const initialQuery = syncFromQuery();
-const preserveInitialPeriod = initialQuery.hadInitialPeriodQuery;
-const preserveInitialUrl = initialQuery.hadInitialQuery;
 
 const alignToAvailable = (preferLatestMonth = false) => {
   let yearWasAdjusted = false;
@@ -257,9 +254,11 @@ const alignToAvailable = (preferLatestMonth = false) => {
 
 const loadAvailable = async (preferLatestMonth = false, preserveSelection = false) => {
   try {
-    const chRes = await fetchAvailableChannels();
+    const [chRes, res] = await Promise.all([
+      fetchAvailableChannels(),
+      fetchAvailablePeriods(channel.value),
+    ]);
     availableChannels.value = chRes.channels;
-    const res = await fetchAvailablePeriods(channel.value);
     availableYearsMap.value = res.years as Record<Scope, number[]>;
     availableMonthsMap.value = res.months;
     availableModesMap.value = res.modes as Record<Scope, Mode[]>;
@@ -379,6 +378,33 @@ const reload = async ({
   }
 };
 
+const loadInitial = async (preserveInitialPeriod: boolean, preserveInitialUrl: boolean) => {
+  if (preserveInitialPeriod) {
+    const availablePromise = loadAvailable(false, true);
+    setupPrefetchObserver();
+    await Promise.all([
+      availablePromise,
+      reload({
+        allowExplicitSelection: true,
+        refreshAvailable: false,
+        syncUrl: false,
+      }),
+    ]);
+    return;
+  }
+
+  await loadAvailable(true);
+  setupPrefetchObserver();
+  await reload({
+    refreshAvailable: false,
+    syncUrl: false,
+  });
+
+  if (!preserveInitialUrl) {
+    pushQuery();
+  }
+};
+
 watch(
   () => year.value,
   () => {
@@ -415,19 +441,14 @@ watch(
 );
 
 onMounted(async () => {
+  const initialQuery = await syncFromQuery();
+  const preserveInitialPeriod = initialQuery.hadInitialPeriodQuery;
+  const preserveInitialUrl = initialQuery.hadInitialQuery;
+
   try {
-    await loadAvailable(!preserveInitialPeriod, preserveInitialPeriod);
-    setupPrefetchObserver();
-    await reload({
-      allowExplicitSelection: preserveInitialPeriod,
-      refreshAvailable: false,
-      syncUrl: false,
-    });
+    await loadInitial(preserveInitialPeriod, preserveInitialUrl);
   } finally {
     isInitializing.value = false;
-    if (!preserveInitialUrl) {
-      pushQuery();
-    }
   }
 });
 
