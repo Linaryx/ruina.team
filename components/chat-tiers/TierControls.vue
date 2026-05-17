@@ -142,7 +142,13 @@ watch(
   },
 );
 
-const channelOptions = computed(() => props.availableChannels || []);
+const channelOptions = computed(() => {
+  const options = [...(props.availableChannels || [])];
+  if (props.channel && !options.includes(props.channel)) {
+    options.unshift(props.channel);
+  }
+  return options;
+});
 const defaultMonthOptions = [
   { value: 1, label: "01 · Январь" },
   { value: 2, label: "02 · Февраль" },

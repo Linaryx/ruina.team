@@ -31,6 +31,7 @@ const month = ref(new Date().getMonth() + 1);
 const scope = ref<Scope>("month");
 const mode = ref<Mode>("online");
 const hadInitialPeriodQuery = ref(false);
+const isInitializing = ref(true);
 const availableYearsMap = ref<Record<Scope, number[]>>({
   year: [],
   month: [],
@@ -199,6 +200,7 @@ const openProfile = async (userId: string) => {
 const data = ref<TierResponse | null>(null);
 const pending = ref(false);
 const error = ref<unknown>(null);
+const hasAttemptedLoad = ref(false);
 const latestMonthlySelection = computed(() => {
   for (const y of availableYearsMap.value.month) {
     const monthsForYear = availableMonthsMap.value[y] || [];
@@ -222,10 +224,6 @@ const { syncFromQuery, pushQuery } = useChatTiersQuery({
 });
 
 const alignToAvailable = (preferLatestMonth = false) => {
-  if (availableChannels.value.length && !availableChannels.value.includes(channel.value)) {
-    channel.value = availableChannels.value[0];
-  }
-
   let yearWasAdjusted = false;
   if (availableYears.value.length && !availableYears.value.includes(year.value)) {
     year.value = availableYears.value[0];
@@ -254,7 +252,7 @@ const alignToAvailable = (preferLatestMonth = false) => {
   }
 };
 
-const loadAvailable = async (preferLatestMonth = false) => {
+const loadAvailable = async (preferLatestMonth = false, preserveSelection = false) => {
   try {
     const chRes = await fetchAvailableChannels();
     availableChannels.value = chRes.channels;
@@ -266,6 +264,9 @@ const loadAvailable = async (preferLatestMonth = false) => {
     if (res.years.year.length) scopes.push("year");
     if (res.years.month.length) scopes.push("month");
     availableScopes.value = scopes;
+    if (preserveSelection) {
+      return;
+    }
     if (availableScopes.value.length === 1) {
       scope.value = availableScopes.value[0];
     } else if (!availableScopes.value.includes(scope.value)) {
@@ -311,6 +312,16 @@ const canReload = computed(() => {
   return true;
 });
 
+const canAttemptExplicitLoad = computed(() => {
+  if (!channel.value.trim()) return false;
+  if (scope.value !== "year" && scope.value !== "month") return false;
+  if (!Number.isFinite(year.value) || year.value <= 2000) return false;
+  if (scope.value === "month" && (!Number.isFinite(month.value) || month.value < 1 || month.value > 12)) {
+    return false;
+  }
+  return mode.value === "all" || mode.value === "online" || mode.value === "offline";
+});
+
 watch(
   () => data.value?.entries,
   async (entries: TierEntry[] | undefined) => {
@@ -325,8 +336,21 @@ watch(
   { immediate: true },
 );
 
-const reload = async () => {
-  if (!canReload.value) return;
+type ReloadOptions = {
+  allowExplicitSelection?: boolean;
+  refreshAvailable?: boolean;
+  syncUrl?: boolean;
+};
+
+const reload = async ({
+  allowExplicitSelection = false,
+  refreshAvailable = true,
+  syncUrl = true,
+}: ReloadOptions = {}) => {
+  if (allowExplicitSelection ? !canAttemptExplicitLoad.value : !canReload.value) {
+    hasAttemptedLoad.value = true;
+    return;
+  }
 
   pending.value = true;
   error.value = null;
@@ -336,20 +360,26 @@ const reload = async () => {
   });
 
   try {
-    await loadAvailable();
+    if (refreshAvailable) {
+      await loadAvailable(false, allowExplicitSelection);
+    }
     await loadTiers();
     await rolesPromise;
-    pushQuery();
+    if (syncUrl) {
+      pushQuery();
+    }
   } catch (e: unknown) {
     error.value = e;
   } finally {
+    hasAttemptedLoad.value = true;
     pending.value = false;
   }
 };
 
 watch(
-  () => [channel.value, year.value],
+  () => year.value,
   () => {
+    if (isInitializing.value) return;
     alignToAvailable();
     pushQuery();
   },
@@ -358,6 +388,7 @@ watch(
 watch(
   () => channel.value,
   async () => {
+    if (isInitializing.value) return;
     await loadAvailable(true);
     pushQuery();
   },
@@ -366,6 +397,7 @@ watch(
 watch(
   () => availableScopes.value,
   () => {
+    if (isInitializing.value) return;
     if (!availableScopes.value.includes(scope.value)) {
       scope.value = availableScopes.value[0] || "year";
     }
@@ -377,6 +409,7 @@ watch(
 watch(
   () => scope.value,
   () => {
+    if (isInitializing.value) return;
     alignToAvailable();
     pushQuery();
   },
@@ -384,13 +417,28 @@ watch(
 
 watch(
   () => [month.value, mode.value],
-  () => pushQuery(),
+  () => {
+    if (isInitializing.value) return;
+    pushQuery();
+  },
 );
 
 onMounted(async () => {
-  syncFromQuery();
-  await loadAvailable(!hadInitialPeriodQuery.value);
-  setupPrefetchObserver();
+  const initialQuery = syncFromQuery();
+  const preserveInitialPeriod = initialQuery.hadInitialPeriodQuery;
+  const preserveInitialUrl = initialQuery.hadInitialQuery;
+
+  try {
+    await loadAvailable(!preserveInitialPeriod, preserveInitialPeriod);
+    setupPrefetchObserver();
+    await reload({
+      allowExplicitSelection: preserveInitialPeriod,
+      refreshAvailable: false,
+      syncUrl: !preserveInitialUrl,
+    });
+  } finally {
+    isInitializing.value = false;
+  }
 });
 
 const periodText = computed(() => {
@@ -500,6 +548,14 @@ const errorText = computed(() => {
 
     <section class="card error" v-if="error">
       <p>Ошибка: {{ errorText }}</p>
+    </section>
+
+    <section v-else-if="hasAttemptedLoad && !pending && !data" class="card empty-state">
+      <p class="value">Данных для выбранной статистики нет.</p>
+      <p class="muted">
+        Проверьте канал, период и режим чата. Если вы открыли ссылку вручную, параметры URL не
+        будут автоматически заменены на другие.
+      </p>
     </section>
 
     <section v-if="pending || data" class="card no-lift results-card">
@@ -708,6 +764,16 @@ h1 {
 .card.error {
   border-color: #b91c1c;
   color: #fecdd3;
+}
+
+.empty-state {
+  display: grid;
+  gap: 8px;
+}
+
+.empty-state .value {
+  margin: 0;
+  font-weight: 800;
 }
 
 .error-text {

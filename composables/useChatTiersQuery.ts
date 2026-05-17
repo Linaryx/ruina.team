@@ -35,11 +35,13 @@ export const useChatTiersQuery = ({
   };
 
   const syncFromQuery = () => {
+    const hadInitialChannelQuery = !!getQueryString("c", "channel");
     hadInitialPeriodQuery.value =
       !!getQueryString("sc", "scope") ||
       !!getQueryString("y", "year") ||
       !!getQueryString("mo", "month") ||
       !!getQueryString("m", "mode");
+    const hadInitialQuery = hadInitialChannelQuery || hadInitialPeriodQuery.value;
 
     const queryChannel = getQueryString("c", "channel");
     const queryScope = getQueryString("sc", "scope");
@@ -56,6 +58,11 @@ export const useChatTiersQuery = ({
     if (queryMode === "all" || queryMode === "online" || queryMode === "offline") {
       mode.value = queryMode;
     }
+
+    return {
+      hadInitialPeriodQuery: hadInitialPeriodQuery.value,
+      hadInitialQuery,
+    };
   };
 
   const pushQuery = () => {
