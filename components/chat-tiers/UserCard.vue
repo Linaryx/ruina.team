@@ -4,11 +4,7 @@
       <div class="card" :style="cardStyle">
         <header class="head">
           <div class="user">
-            <img
-              v-if="userData.logo"
-              :src="userData.logo"
-              alt=""
-            />
+            <img v-if="userData.logo" :src="userData.logo" alt="" />
             <div>
               <p class="title">{{ displayName }}</p>
               <p class="muted mono">ID: {{ userData.id }}</p>
@@ -159,7 +155,7 @@ const cardStyle = computed(() => ({
   background-size: cover;
   border-radius: 50%;
   filter: blur(10px) saturate(0.85) brightness(0.82);
-  opacity: 0.24;
+  opacity: 0.5;
   transform: scale(1.18);
 }
 
@@ -170,8 +166,7 @@ const cardStyle = computed(() => ({
   z-index: -1;
   background:
     linear-gradient(90deg, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.72)),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent 38%),
-    rgba(0, 0, 0, 0.26);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent 38%), rgba(0, 0, 0, 0.26);
 }
 
 .card:hover {
