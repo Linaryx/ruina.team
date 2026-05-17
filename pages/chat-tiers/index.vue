@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, reactive, ref, watch, onMounted } from "vue";
+import { computed, reactive, ref, watch, onMounted } from "vue";
 import TierControls from "~/components/chat-tiers/TierControls.vue";
 import TierSummary from "~/components/chat-tiers/TierSummary.vue";
 import TierTable from "~/components/chat-tiers/TierTable.vue";
@@ -222,6 +222,9 @@ const { syncFromQuery, pushQuery } = useChatTiersQuery({
   mode,
   hadInitialPeriodQuery,
 });
+const initialQuery = syncFromQuery();
+const preserveInitialPeriod = initialQuery.hadInitialPeriodQuery;
+const preserveInitialUrl = initialQuery.hadInitialQuery;
 
 const alignToAvailable = (preferLatestMonth = false) => {
   let yearWasAdjusted = false;
@@ -395,18 +398,6 @@ watch(
 );
 
 watch(
-  () => availableScopes.value,
-  () => {
-    if (isInitializing.value) return;
-    if (!availableScopes.value.includes(scope.value)) {
-      scope.value = availableScopes.value[0] || "year";
-    }
-    alignToAvailable();
-  },
-  { deep: true },
-);
-
-watch(
   () => scope.value,
   () => {
     if (isInitializing.value) return;
@@ -424,21 +415,19 @@ watch(
 );
 
 onMounted(async () => {
-  const initialQuery = syncFromQuery();
-  const preserveInitialPeriod = initialQuery.hadInitialPeriodQuery;
-  const preserveInitialUrl = initialQuery.hadInitialQuery;
-
   try {
     await loadAvailable(!preserveInitialPeriod, preserveInitialPeriod);
     setupPrefetchObserver();
     await reload({
       allowExplicitSelection: preserveInitialPeriod,
       refreshAvailable: false,
-      syncUrl: !preserveInitialUrl,
+      syncUrl: false,
     });
-    await nextTick();
   } finally {
     isInitializing.value = false;
+    if (!preserveInitialUrl) {
+      pushQuery();
+    }
   }
 });
 

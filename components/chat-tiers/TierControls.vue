@@ -3,21 +3,21 @@
     <label>
       <span>Канал</span>
       <template v-if="channelOptions.length">
-        <select v-model="local.channel">
+        <select v-model="channelModel">
           <option v-for="c in channelOptions" :key="c" :value="c">
             {{ c }}
           </option>
         </select>
       </template>
       <template v-else>
-        <input v-model="local.channel" type="text" />
+        <input v-model="channelModel" type="text" />
       </template>
     </label>
 
     <label>
       <span>Период</span>
-      <select v-model="local.scope" :disabled="!scopeOptions.length">
-        <option v-if="!scopeOptions.length" :value="local.scope">Нет доступных периодов</option>
+      <select v-model="scopeModel" :disabled="!scopeOptions.length">
+        <option v-if="!scopeOptions.length" :value="scopeModel">Нет доступных периодов</option>
         <option v-for="opt in scopeOptions" :key="opt.value" :value="opt.value">
           {{ opt.label }}
         </option>
@@ -26,18 +26,18 @@
 
     <label>
       <span>Год</span>
-      <select v-model.number="local.year" :disabled="!yearOptions.length">
-        <option v-if="!yearOptions.length" :value="local.year">Нет доступных лет</option>
+      <select v-model.number="yearModel" :disabled="!yearOptions.length">
+        <option v-if="!yearOptions.length" :value="yearModel">Нет доступных лет</option>
         <option v-for="y in yearOptions" :key="y" :value="y">
           {{ y }}
         </option>
       </select>
     </label>
 
-    <label v-if="local.scope !== 'year'">
+    <label v-if="scopeModel !== 'year'">
       <span>Месяц</span>
-      <select v-model.number="local.month" :disabled="!monthOptions.length">
-        <option v-if="!monthOptions.length" :value="local.month">Нет доступных месяцев</option>
+      <select v-model.number="monthModel" :disabled="!monthOptions.length">
+        <option v-if="!monthOptions.length" :value="monthModel">Нет доступных месяцев</option>
         <option v-for="m in monthOptions" :key="m.value" :value="m.value">
           {{ m.label }}
         </option>
@@ -46,8 +46,8 @@
 
     <label>
       <span>Режим чата</span>
-      <select v-model="local.mode" :disabled="!modeOptionsComputed.length">
-        <option v-if="!modeOptionsComputed.length" :value="local.mode">
+      <select v-model="modeModel" :disabled="!modeOptionsComputed.length">
+        <option v-if="!modeOptionsComputed.length" :value="modeModel">
           Нет доступных режимов
         </option>
         <option v-for="opt in modeOptionsComputed" :key="opt.value" :value="opt.value">
@@ -59,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, watch } from "vue";
+import { computed } from "vue";
 import type { Mode, Scope } from "~/types/tiers";
 
 const props = defineProps<{
@@ -84,11 +84,31 @@ const emit = defineEmits<{
   (e: "reload"): void;
 }>();
 
-const modeOptions: { label: string; value: Mode }[] = [
-  { label: "Все", value: "all" as Mode },
-  { label: "Онлайн", value: "online" as Mode },
-  { label: "Оффлайн", value: "offline" as Mode },
-];
+const channelModel = computed({
+  get: () => props.channel,
+  set: (value: string) => emit("update:channel", value),
+});
+
+const scopeModel = computed({
+  get: () => props.scope,
+  set: (value: Scope) => emit("update:scope", value),
+});
+
+const yearModel = computed({
+  get: () => props.year,
+  set: (value: number) => emit("update:year", value),
+});
+
+const monthModel = computed({
+  get: () => props.month,
+  set: (value: number) => emit("update:month", value),
+});
+
+const modeModel = computed({
+  get: () => props.mode,
+  set: (value: Mode) => emit("update:mode", value),
+});
+
 const scopeOptions = computed<{ label: string; value: Scope }[]>(() => {
   return (props.availableScopes || []).map((s) => ({
     value: s,
@@ -101,46 +121,6 @@ const modeOptionsComputed = computed(() => {
     label: m === "all" ? "Все" : m === "online" ? "Онлайн" : "Оффлайн",
   }));
 });
-
-const local = reactive({
-  channel: props.channel,
-  scope: props.scope,
-  year: props.year,
-  month: props.month,
-  mode: props.mode,
-});
-
-// синхронизируем локальное состояние, если родитель меняет значения
-watch(
-  () => props.channel,
-  (v) => {
-    local.channel = v;
-  },
-);
-watch(
-  () => props.scope,
-  (v) => {
-    local.scope = v;
-  },
-);
-watch(
-  () => props.year,
-  (v) => {
-    local.year = v;
-  },
-);
-watch(
-  () => props.month,
-  (v) => {
-    local.month = v;
-  },
-);
-watch(
-  () => props.mode,
-  (v) => {
-    local.mode = v;
-  },
-);
 
 const channelOptions = computed(() => {
   const options = [...(props.availableChannels || [])];
@@ -173,38 +153,6 @@ const monthOptions = computed(() =>
   }),
 );
 const yearOptions = computed(() => props.availableYears || []);
-
-watch(yearOptions, (options) => {
-  if (options.length && !options.includes(local.year)) {
-    local.year = options[0];
-  }
-});
-
-watch(monthOptions, (options) => {
-  if (!options.length) return;
-  const values = options.map((option) => option.value);
-  if (!values.includes(local.month)) {
-    local.month = values[values.length - 1];
-  }
-});
-
-watch(modeOptionsComputed, (options) => {
-  if (options.length && !options.some((option) => option.value === local.mode)) {
-    local.mode = options[0].value;
-  }
-});
-
-watch(
-  () => ({ ...local }),
-  (v) => {
-    emit("update:channel", v.channel);
-    emit("update:scope", v.scope);
-    emit("update:year", v.year);
-    emit("update:month", v.month);
-    emit("update:mode", v.mode);
-  },
-  { deep: true },
-);
 </script>
 
 <style scoped>
