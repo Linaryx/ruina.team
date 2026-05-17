@@ -8,9 +8,6 @@
               v-if="userData.logo"
               :src="userData.logo"
               alt=""
-              ref="avatarEl"
-              crossorigin="anonymous"
-              @load="onAvatarLoad"
             />
             <div>
               <p class="title">{{ displayName }}</p>
@@ -60,7 +57,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { computed } from "vue";
 import TierChip from "./TierChip.vue";
 import type { TierEntry } from "~/types/tiers";
 import { buildScoredEntry } from "~/lib/score";
@@ -89,13 +86,6 @@ const props = defineProps<{
 
 defineEmits<{ (e: "close"): void }>();
 
-const avatarEl = ref<HTMLImageElement | null>(null);
-const accentColor = ref<string | null>(null);
-const accentColor2 = ref<string | null>(null);
-const bgColor = ref<string | null>(null);
-const surfaceColor = ref<string | null>(null);
-const textColor = ref<string | null>(null);
-
 const metricItems = [
   { label: "Подписчики", value: props.userData.followers ?? "-" },
   { label: "Возраст аккаунта", value: props.createdText },
@@ -111,174 +101,13 @@ const powerPoints = computed(() => {
   return scored.scoreRounded;
 });
 
-const clamp = (val: number, min: number, max: number) => Math.min(max, Math.max(min, val));
-
-const rgbToHsl = (r: number, g: number, b: number) => {
-  r /= 255;
-  g /= 255;
-  b /= 255;
-  const max = Math.max(r, g, b),
-    min = Math.min(r, g, b);
-  let h = 0,
-    s = 0,
-    l = (max + min) / 2;
-  if (max !== min) {
-    const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    switch (max) {
-      case r:
-        h = (g - b) / d + (g < b ? 6 : 0);
-        break;
-      case g:
-        h = (b - r) / d + 2;
-        break;
-      case b:
-        h = (r - g) / d + 4;
-        break;
-    }
-    h /= 6;
-  }
-  return { h, s, l };
-};
-
-const hslToRgb = (h: number, s: number, l: number) => {
-  const hue2rgb = (p: number, q: number, t: number) => {
-    if (t < 0) t += 1;
-    if (t > 1) t -= 1;
-    if (t < 1 / 6) return p + (q - p) * 6 * t;
-    if (t < 1 / 2) return q;
-    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-    return p;
-  };
-  let r = l,
-    g = l,
-    b = l;
-  if (s !== 0) {
-    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-    const p = 2 * l - q;
-    r = hue2rgb(p, q, h + 1 / 3);
-    g = hue2rgb(p, q, h);
-    b = hue2rgb(p, q, h - 1 / 3);
-  }
-  return {
-    r: Math.round(r * 255),
-    g: Math.round(g * 255),
-    b: Math.round(b * 255),
-  };
-};
-
-const adjustLightness = (rgb: [number, number, number], delta: number) => {
-  const { h, s, l } = rgbToHsl(rgb[0], rgb[1], rgb[2]);
-  const nextL = clamp(l + delta, 0, 1);
-  const { r, g, b } = hslToRgb(h, s, nextL);
-  return `rgb(${r}, ${g}, ${b})`;
-};
-
-const getTextColor = (rgb: [number, number, number]) => {
-  const [r, g, b] = rgb.map((c) => c / 255);
-  const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  return lum > 0.55 ? "#0b0b0b" : "#f5f5f5";
-};
-
-const toRgbString = (rgb: [number, number, number]) => `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
-
-const quantizeChannel = (value: number) => Math.round(value / 24) * 24;
-
-const colorDistance = (a: [number, number, number], b: [number, number, number]) => {
-  const dr = a[0] - b[0];
-  const dg = a[1] - b[1];
-  const db = a[2] - b[2];
-  return Math.sqrt(dr * dr + dg * dg + db * db);
-};
-
-const getMostFrequentColors = (data: Uint8ClampedArray) => {
-  const buckets = new Map<string, { color: [number, number, number]; count: number }>();
-
-  for (let i = 0; i < data.length; i += 4) {
-    if (data[i + 3] < 32) continue;
-
-    const color: [number, number, number] = [
-      clamp(quantizeChannel(data[i]), 0, 255),
-      clamp(quantizeChannel(data[i + 1]), 0, 255),
-      clamp(quantizeChannel(data[i + 2]), 0, 255),
-    ];
-    const key = color.join(",");
-    const existing = buckets.get(key);
-
-    if (existing) {
-      existing.count += 1;
-    } else {
-      buckets.set(key, { color, count: 1 });
-    }
-  }
-
-  const ranked = [...buckets.values()].sort((a, b) => b.count - a.count);
-  const primary = ranked[0]?.color;
-  if (!primary) return null;
-
-  const secondary = ranked.find(({ color }) => colorDistance(primary, color) >= 56)?.color ?? primary;
-  return { primary, secondary };
-};
-
-const extractAccent = async () => {
-  if (!avatarEl.value || !avatarEl.value.complete || !avatarEl.value.naturalWidth) return;
-  try {
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const size = 48;
-    canvas.width = size;
-    canvas.height = size;
-    ctx.drawImage(avatarEl.value, 0, 0, size, size);
-    const data = ctx.getImageData(0, 0, size, size).data;
-    const palette = getMostFrequentColors(data);
-    if (!palette) return;
-
-    accentColor.value = toRgbString(palette.primary);
-    accentColor2.value = toRgbString(palette.secondary);
-    bgColor.value = adjustLightness(palette.primary, -0.1);
-    surfaceColor.value = adjustLightness(palette.secondary, 0.08);
-    textColor.value = getTextColor(palette.primary);
-  } catch {
-    /* ignore failures, keep theme defaults */
-  }
-};
-
-const onAvatarLoad = () => {
-  extractAccent();
-};
-
-watch(
-  () => props.userData.logo,
-  () => {
-    accentColor.value = null;
-    accentColor2.value = null;
-    bgColor.value = null;
-    surfaceColor.value = null;
-    textColor.value = null;
-    nextTick(() => extractAccent());
-  },
-);
-
-onMounted(() => {
-  if (avatarEl.value?.complete) {
-    extractAccent();
-  }
-});
-
 const formatHours = (count: number, minutes: number) => {
   const hours = (count * minutes) / 60;
   return `${hours.toFixed(1)}h`;
 };
 
 const cardStyle = computed(() => ({
-  "--card-accent": accentColor.value || "var(--theme-accent)",
-  "--card-accent-2": accentColor2.value || accentColor.value || "var(--theme-accent)",
-  "--card-bg": bgColor.value || "var(--theme-bg-soft, var(--color-bg3))",
-  "--card-surface": surfaceColor.value || "var(--theme-surface, var(--color-surface))",
-  "--card-text": textColor.value || "var(--theme-text-main, #ffffff)",
-  backgroundColor: bgColor.value || "var(--theme-bg-soft, var(--color-bg3))",
-  borderColor: accentColor.value || "var(--theme-accent)",
+  "--card-avatar-bg": props.userData.logo ? `url("${props.userData.logo}")` : "none",
 }));
 </script>
 
@@ -295,22 +124,45 @@ const cardStyle = computed(() => ({
 }
 
 .card {
-  background: var(--card-bg);
-  border: 2px solid var(--card-accent);
-  background-repeat: no-repeat;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: #0b0b0b;
+  border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 14px;
   padding: 1em;
   width: 100%;
   max-width: clamp(320px, 80vw, 440px);
-  color: var(--card-text);
+  color: #ffffff;
   font-weight: 700;
-  /* make primary text bold */
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
   display: flex;
   flex-direction: column;
   gap: 12px;
-  backdrop-filter: blur(8px) brightness(2);
   transition: none !important;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  inset: -24px;
+  z-index: -2;
+  background-image: var(--card-avatar-bg);
+  background-position: center;
+  background-size: cover;
+  filter: blur(26px) saturate(0) brightness(0.65);
+  opacity: 0.8;
+  transform: scale(1.12);
+}
+
+.card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.36), rgba(0, 0, 0, 0.72)),
+    rgba(0, 0, 0, 0.42);
 }
 
 .card:hover {
@@ -335,17 +187,18 @@ const cardStyle = computed(() => ({
   height: clamp(40px, 10vw, 48px);
   border-radius: 10px;
   object-fit: cover;
-  border: 2px solid var(--card-accent);
+  border: 2px solid rgba(255, 255, 255, 0.86);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.42);
 }
 
 .title {
   margin: 0;
   font-weight: 800;
-  color: var(--card-text);
+  color: #ffffff;
 }
 
 .muted {
-  color: var(--card-text);
+  color: rgba(255, 255, 255, 0.78);
   font-weight: 700;
   opacity: 0.95;
 }
@@ -364,25 +217,25 @@ const cardStyle = computed(() => ({
   display: flex;
   flex-direction: column;
   gap: 4px;
-  background: var(--card-accent-2);
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(0px) !important;
-  border: 3px solid var(--card-accent-2);
+  border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: 10px;
   padding: 10px;
-  color: var(--card-text);
+  color: #050505;
 }
 
 .label {
   margin: 0;
   font-size: 0.8em;
-  color: var(--card-text);
+  color: #111111;
   font-weight: 700;
 }
 
 .value {
   margin: 0;
   font-weight: 800;
-  color: var(--card-text);
+  color: #000000;
 }
 
 .tiers {
@@ -408,22 +261,22 @@ const cardStyle = computed(() => ({
   text-decoration: none;
   font-weight: 700;
   transition: all 0.15s ease;
-  border: 2px solid var(--card-accent);
-  background: var(--card-surface);
-  color: var(--card-text);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.92);
+  color: #000000;
   box-shadow: none;
 }
 
 .btn:hover {
-  border-color: var(--card-surface);
-  background-color: var(--card-accent-2);
+  border-color: #ffffff;
+  background-color: #ffffff;
   transform: none;
 }
 
 .btn:active {
   transform: none;
-  border: 2px solid var(--card-accent);
-  background: var(--card-surface);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.84);
 }
 
 /* Force any SVG inside the card (e.g., progress icons) to use white */
