@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch, onMounted } from "vue";
+import { computed, nextTick, reactive, ref, watch, onMounted } from "vue";
 import TierControls from "~/components/chat-tiers/TierControls.vue";
 import TierSummary from "~/components/chat-tiers/TierSummary.vue";
 import TierTable from "~/components/chat-tiers/TierTable.vue";
@@ -436,6 +436,7 @@ onMounted(async () => {
       refreshAvailable: false,
       syncUrl: !preserveInitialUrl,
     });
+    await nextTick();
   } finally {
     isInitializing.value = false;
   }
