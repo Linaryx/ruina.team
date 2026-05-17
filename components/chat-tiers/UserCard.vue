@@ -127,15 +127,19 @@ const cardStyle = computed(() => ({
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  background: #0b0b0b;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 14px;
-  padding: 1em;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.08), transparent 34%),
+    linear-gradient(180deg, rgba(16, 16, 18, 0.96), rgba(5, 5, 6, 0.98));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  padding: 18px;
   width: 100%;
   max-width: clamp(320px, 80vw, 440px);
   color: #ffffff;
   font-weight: 700;
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.58),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -145,14 +149,18 @@ const cardStyle = computed(() => ({
 .card::before {
   content: "";
   position: absolute;
-  inset: -24px;
+  top: -42px;
+  right: -52px;
+  width: 280px;
+  height: 280px;
   z-index: -2;
   background-image: var(--card-avatar-bg);
   background-position: center;
   background-size: cover;
-  filter: blur(26px) saturate(0) brightness(0.65);
-  opacity: 0.8;
-  transform: scale(1.12);
+  border-radius: 50%;
+  filter: blur(10px) saturate(0.85) brightness(0.82);
+  opacity: 0.24;
+  transform: scale(1.18);
 }
 
 .card::after {
@@ -161,8 +169,9 @@ const cardStyle = computed(() => ({
   inset: 0;
   z-index: -1;
   background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.36), rgba(0, 0, 0, 0.72)),
-    rgba(0, 0, 0, 0.42);
+    linear-gradient(90deg, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.72)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent 38%),
+    rgba(0, 0, 0, 0.26);
 }
 
 .card:hover {
@@ -185,10 +194,12 @@ const cardStyle = computed(() => ({
 .user img {
   width: clamp(40px, 10vw, 48px);
   height: clamp(40px, 10vw, 48px);
-  border-radius: 10px;
+  border-radius: 12px;
   object-fit: cover;
-  border: 2px solid rgba(255, 255, 255, 0.86);
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.52),
+    0 0 0 3px rgba(255, 255, 255, 0.06);
 }
 
 .title {
@@ -198,7 +209,7 @@ const cardStyle = computed(() => ({
 }
 
 .muted {
-  color: rgba(255, 255, 255, 0.78);
+  color: rgba(255, 255, 255, 0.7);
   font-weight: 700;
   opacity: 0.95;
 }
@@ -217,25 +228,26 @@ const cardStyle = computed(() => ({
   display: flex;
   flex-direction: column;
   gap: 4px;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(0px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  border-radius: 10px;
-  padding: 10px;
-  color: #050505;
+  background: rgba(255, 255, 255, 0.075);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 12px;
+  color: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .label {
   margin: 0;
   font-size: 0.8em;
-  color: #111111;
+  color: rgba(255, 255, 255, 0.68);
   font-weight: 700;
 }
 
 .value {
   margin: 0;
   font-weight: 800;
-  color: #000000;
+  color: #ffffff;
 }
 
 .tiers {
@@ -261,22 +273,23 @@ const cardStyle = computed(() => ({
   text-decoration: none;
   font-weight: 700;
   transition: all 0.15s ease;
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  background: rgba(255, 255, 255, 0.92);
-  color: #000000;
-  box-shadow: none;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(10px);
 }
 
 .btn:hover {
-  border-color: #ffffff;
-  background-color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.3);
+  background-color: rgba(255, 255, 255, 0.14);
   transform: none;
 }
 
 .btn:active {
   transform: none;
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  background: rgba(255, 255, 255, 0.84);
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 /* Force any SVG inside the card (e.g., progress icons) to use white */
