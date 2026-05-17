@@ -3,7 +3,7 @@ id: 1
 title: "Гайд по установке и настройке майнкрафт"
 author: "Digidro"
 description: "В этой статье мы рассмотрим, как установить и настроить Minecraft на вашем компьютере."
-image_url: "https://new.freesmlauncher.org/favicon.webp"
+image_url: "/guides/minecraft/cover.webp"
 created_at: "2025-12-20T10:30:00Z"
 tags:
   - Minecraft
