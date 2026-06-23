@@ -109,12 +109,13 @@ watch(
 }
 
 .hero {
-  --footer-height: 84px;
   --hero-pad-top: clamp(104px, 12vh, 144px);
   --hero-pad-bottom: 24px;
   position: relative;
-  min-height: calc(100vh - var(--footer-height));
-  min-height: calc(100dvh - var(--footer-height));
+  display: block;
+  margin-bottom: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
   padding: var(--hero-pad-top) clamp(20px, 5vw, 56px) var(--hero-pad-bottom);
   overflow: hidden;
   background: url("/bg.webp") center / cover no-repeat;
@@ -123,13 +124,16 @@ watch(
 .hero-overlay {
   position: absolute;
   inset: 0;
-  background:
+  /*background:
     radial-gradient(ellipse at 50% 38%, rgba(188, 222, 226, 0.14), transparent 44%),
     linear-gradient(180deg, rgba(5, 7, 8, 0.18), rgba(5, 7, 8, 0.5)),
-    url("/ruines.webp") center bottom / min(1420px, 94%) no-repeat;
+    url("/ruines.webp") center bottom / min(1420px, 94%) no-repeat;*/
+  background: url("/ruines.webp") center bottom / min(1420px, 94%) no-repeat;
   opacity: 0;
   filter: blur(10px);
   transform: translateY(78px) scale(1.08);
+  pointer-events: none;
+  z-index: 2;
 }
 
 .hero-noise {
@@ -139,6 +143,7 @@ watch(
   mix-blend-mode: screen;
   opacity: 0;
   transform: scale(1.03);
+  pointer-events: none;
 }
 
 .hero-fade {
@@ -146,6 +151,7 @@ watch(
   inset: auto 0 0;
   height: clamp(140px, 18vh, 220px);
   background: linear-gradient(180deg, rgba(6, 7, 8, 0), rgba(6, 7, 8, 0.72) 54%, #070809 100%);
+  pointer-events: none;
   z-index: 0;
 }
 
@@ -155,8 +161,8 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - var(--footer-height) - var(--hero-pad-top) - var(--hero-pad-bottom));
-  min-height: calc(100dvh - var(--footer-height) - var(--hero-pad-top) - var(--hero-pad-bottom));
+  min-height: calc(100vh - var(--hero-pad-top) - var(--hero-pad-bottom));
+  min-height: calc(100dvh - var(--hero-pad-top) - var(--hero-pad-bottom));
 }
 
 .hero-wordmark {
@@ -269,7 +275,6 @@ watch(
 
 @media (max-width: 700px) {
   .hero {
-    --footer-height: 76px;
     --hero-pad-top: calc(var(--nav-height, 72px) + 28px);
     --hero-pad-bottom: 18px;
     padding-inline: 14px;

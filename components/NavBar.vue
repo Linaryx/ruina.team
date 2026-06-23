@@ -13,6 +13,7 @@ const props = defineProps<{ hero?: boolean }>();
     <nav class="nav-links">
       <NuxtLink to="/guides">Руководства</NuxtLink>
       <NuxtLink to="/chat-tiers">Рейтинг чата</NuxtLink>
+      <NuxtLink to="https://chat.ruina.team/" target="_blank">Оверлей чата</NuxtLink>
     </nav>
   </header>
 </template>
