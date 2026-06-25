@@ -60,9 +60,32 @@ const writeToClipboard = async (text: string) => {
   }
 };
 
-const copyArticleUrl = async () => {
+const isMobileShare = () => {
+  if (typeof window === "undefined" || !navigator.share) return false;
+  return window.matchMedia("(max-width: 640px)").matches;
+};
+
+const handleArticleAction = async () => {
   if (typeof window === "undefined") return;
-  const ok = await writeToClipboard(window.location.href.split("#")[0]);
+
+  const url = window.location.href.split("#")[0];
+
+  if (isMobileShare()) {
+    try {
+      await navigator.share({
+        title: guide.value?.title || document.title,
+        url,
+      });
+    } catch (err) {
+      const error = err as Error;
+      if (error.name !== "AbortError") {
+        console.error("Share failed:", error);
+      }
+    }
+    return;
+  }
+
+  const ok = await writeToClipboard(url);
   if (!ok) return;
   articleLinkCopied.value = true;
   window.setTimeout(() => {
@@ -152,18 +175,6 @@ watch(
         <img :src="guide.image_url || '/favicon.svg'" :alt="guide.title" />
       </div>
       <div class="hero-content">
-        <div class="hero-eyebrow-row">
-          <p class="eyebrow">Guide</p>
-          <button
-            class="copy-link-btn"
-            type="button"
-            :aria-label="articleLinkCopied ? 'Ссылка скопирована' : 'Копировать ссылку на статью'"
-            :title="articleLinkCopied ? 'Скопировано' : 'Копировать ссылку'"
-            @click="copyArticleUrl"
-          >
-            <span class="material-symbols-outlined">{{ articleLinkCopied ? "check" : "link_2" }}</span>
-          </button>
-        </div>
         <h1 class="hero-title">
           {{ guide.title || "Без названия" }}
           <span class="hero-author" v-if="guide.author">by {{ guide.author }}</span>
@@ -187,15 +198,32 @@ watch(
           </div>
         </div>
 
-        <div class="hero-tags" v-if="guide.tags?.length">
-          <span
-            v-for="(tag, tagIdx) in guide.tags"
-            :key="`${guide._path}-tag-${tag}-${tagIdx}`"
-            class="tag-pill"
-            :class="tagColor(tagIdx)"
+        <div class="hero-actions">
+          <button
+            class="copy-link-btn"
+            type="button"
+            :aria-label="articleLinkCopied ? 'Ссылка скопирована' : 'Копировать ссылку на статью'"
+            :title="articleLinkCopied ? 'Скопировано' : 'Копировать ссылку'"
+            @click="handleArticleAction"
           >
-            {{ tag }}
-          </span>
+            <span class="copy-link-label copy-link-label--desktop">
+              <span class="material-symbols-outlined">{{ articleLinkCopied ? "check" : "link_2" }}</span>
+            </span>
+            <span class="copy-link-label copy-link-label--mobile" aria-hidden="true">
+              <span class="material-symbols-outlined">ios_share</span>
+            </span>
+          </button>
+
+          <div class="hero-tags" v-if="guide.tags?.length">
+            <span
+              v-for="(tag, tagIdx) in guide.tags"
+              :key="`${guide._path}-tag-${tag}-${tagIdx}`"
+              class="tag-pill"
+              :class="tagColor(tagIdx)"
+            >
+              {{ tag }}
+            </span>
+          </div>
         </div>
       </div>
     </header>
@@ -274,18 +302,10 @@ watch(
   gap: 10px;
 }
 
-.eyebrow {
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--color-brand-accent-3);
-  font-size: 12px;
-  font-weight: 700;
-  margin: 0;
-}
-
-.hero-eyebrow-row {
+.hero-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
@@ -301,6 +321,7 @@ watch(
   background: transparent;
   color: var(--color-brand-accent-bright);
   cursor: pointer;
+  flex-shrink: 0;
   transition:
     background 0.12s ease,
     color 0.12s ease,
@@ -314,6 +335,10 @@ watch(
 
 .copy-link-btn .material-symbols-outlined {
   font-size: 18px;
+}
+
+.copy-link-label--mobile {
+  display: none;
 }
 
 .hero-title {
@@ -550,6 +575,14 @@ watch(
 }
 
 @media (max-width: 640px) {
+  .copy-link-label--desktop {
+    display: none;
+  }
+
+  .copy-link-label--mobile {
+    display: inline-flex;
+  }
+
   .guide-nav {
     flex-direction: column;
     align-items: stretch;
