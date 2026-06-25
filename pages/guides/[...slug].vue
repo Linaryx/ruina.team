@@ -313,8 +313,8 @@ watch(
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   border: 1px solid var(--color-brand-accent-1);
   border-radius: 6px;
