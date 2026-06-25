@@ -322,6 +322,7 @@ watch(
   color: var(--color-brand-accent-bright);
   cursor: pointer;
   flex-shrink: 0;
+  line-height: 1;
   transition:
     background 0.12s ease,
     color 0.12s ease,
@@ -334,7 +335,13 @@ watch(
 }
 
 .copy-link-btn .material-symbols-outlined {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
   font-size: 18px;
+  line-height: 1;
 }
 
 .copy-link-label--mobile {
