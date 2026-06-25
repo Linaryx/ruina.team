@@ -61,17 +61,10 @@ const copyCode = async () => {
   background: #0f172acc;
   color: var(--color-text-1);
   cursor: pointer;
-  opacity: 0;
   transition:
-    opacity 0.15s ease,
     background 0.12s ease,
     color 0.12s ease,
     border-color 0.12s ease;
-}
-
-.prose-pre-wrapper:hover .prose-pre-copy,
-.prose-pre-copy:focus-visible {
-  opacity: 1;
 }
 
 .prose-pre-copy:hover {
@@ -116,9 +109,4 @@ const copyCode = async () => {
   top: 38px;
 }
 
-@media (max-width: 640px) {
-  .prose-pre-copy {
-    opacity: 1;
-  }
-}
 </style>
