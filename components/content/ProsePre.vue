@@ -48,16 +48,17 @@ const copyCode = async () => {
 
 .prose-pre-copy {
   position: absolute;
-  top: 8px;
+  top: 50%;
   right: 8px;
+  transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   border: 1px solid #ffffff33;
-  border-radius: 8px;
+  border-radius: 6px;
   background: #0f172acc;
   color: var(--color-text-1);
   cursor: pointer;
@@ -77,9 +78,9 @@ const copyCode = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
-  font-size: 18px;
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
   line-height: 1;
 }
 
@@ -103,10 +104,6 @@ const copyCode = async () => {
 
 .prose-pre-wrapper.has-filename pre {
   padding-top: 42px;
-}
-
-.prose-pre-wrapper.has-filename .prose-pre-copy {
-  top: 38px;
 }
 
 </style>
