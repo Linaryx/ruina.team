@@ -48,6 +48,28 @@ const lightboxImages = ref<string[]>([]);
 const lightboxIndex = ref(0);
 const lightboxVisible = ref(false);
 
+const articleLinkCopied = ref(false);
+
+const writeToClipboard = async (text: string) => {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (err) {
+    console.error("Failed to copy:", err);
+    return false;
+  }
+};
+
+const copyArticleUrl = async () => {
+  if (typeof window === "undefined") return;
+  const ok = await writeToClipboard(window.location.href.split("#")[0]);
+  if (!ok) return;
+  articleLinkCopied.value = true;
+  window.setTimeout(() => {
+    articleLinkCopied.value = false;
+  }, 2000);
+};
+
 const decorateImages = () => {
   const el = bodyRef.value;
   if (!el) return;
@@ -61,7 +83,22 @@ const decorateImages = () => {
 
 const onBodyClick = (event: MouseEvent) => {
   const target = event.target as HTMLElement | null;
-  if (!target || target.tagName !== "IMG") return;
+  if (!target) return;
+
+  const anchor = target.closest?.("h2 a, h3 a, h4 a") as HTMLAnchorElement | null;
+  if (anchor) {
+    writeToClipboard(anchor.href).then((ok) => {
+      if (!ok) return;
+      const icon = anchor.querySelector<HTMLElement>(".heading-anchor-icon");
+      if (icon) icon.textContent = "check_small";
+      window.setTimeout(() => {
+        if (icon) icon.textContent = "arrow_outward";
+      }, 2000);
+    });
+    return;
+  }
+
+  if (target.tagName !== "IMG") return;
   const el = bodyRef.value;
   if (!el) return;
   const imgs = Array.from(el.querySelectorAll<HTMLImageElement>("img"));
@@ -78,15 +115,23 @@ const hideLightbox = () => {
   lightboxVisible.value = false;
 };
 
-const applyAnchorClasses = () => {
+const decorateHeadings = () => {
   const el = bodyRef.value;
   if (!el) return;
-  const headingAnchors = el.querySelectorAll<HTMLElement>("h1 a, h2 a, h3 a, h4 a, h5 a, h6 a");
-  headingAnchors.forEach((a) => a.classList.add("heading-anchor"));
+  const headingAnchors = el.querySelectorAll<HTMLElement>("h2 a, h3 a, h4 a");
+  headingAnchors.forEach((a) => {
+    a.classList.add("heading-anchor");
+    if (a.querySelector(".heading-anchor-icon")) return;
+    const icon = document.createElement("span");
+    icon.className = "material-symbols-outlined heading-anchor-icon";
+    icon.textContent = "arrow_outward";
+    icon.setAttribute("aria-hidden", "true");
+    a.prepend(icon);
+  });
 };
 
 const refreshBody = () => {
-  applyAnchorClasses();
+  decorateHeadings();
   decorateImages();
 };
 
@@ -107,7 +152,18 @@ watch(
         <img :src="guide.image_url || '/favicon.svg'" :alt="guide.title" />
       </div>
       <div class="hero-content">
-        <p class="eyebrow">Guide</p>
+        <div class="hero-eyebrow-row">
+          <p class="eyebrow">Guide</p>
+          <button
+            class="copy-link-btn"
+            type="button"
+            :aria-label="articleLinkCopied ? 'Ссылка скопирована' : 'Копировать ссылку на статью'"
+            :title="articleLinkCopied ? 'Скопировано' : 'Копировать ссылку'"
+            @click="copyArticleUrl"
+          >
+            <span class="material-symbols-outlined">{{ articleLinkCopied ? "check" : "link_2" }}</span>
+          </button>
+        </div>
         <h1 class="hero-title">
           {{ guide.title || "Без названия" }}
           <span class="hero-author" v-if="guide.author">by {{ guide.author }}</span>
@@ -225,6 +281,39 @@ watch(
   font-size: 12px;
   font-weight: 700;
   margin: 0;
+}
+
+.hero-eyebrow-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.copy-link-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--color-brand-accent-1);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-brand-accent-bright);
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.copy-link-btn:hover {
+  background: var(--color-brand-accent-1);
+  color: #fff;
+}
+
+.copy-link-btn .material-symbols-outlined {
+  font-size: 18px;
 }
 
 .hero-title {
@@ -362,8 +451,23 @@ watch(
 }
 
 .guide-body :deep(a.heading-anchor) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   text-decoration: none !important;
   border: none !important;
+}
+
+.guide-body :deep(.heading-anchor-icon) {
+  font-size: 16px;
+  color: var(--color-brand-accent-bright);
+  opacity: 0.7;
+  transition: opacity 0.12s ease;
+}
+
+.guide-body :deep(a.heading-anchor:hover) .heading-anchor-icon,
+.guide-body :deep(a.heading-anchor:focus-visible) .heading-anchor-icon {
+  opacity: 1;
 }
 
 .guide-body :deep(img) {

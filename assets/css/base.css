@@ -8,6 +8,16 @@
 
 html {
   background: #000;
+  /* Keep anchored headings below the fixed/floating navbar. */
+  scroll-padding-top: 80px;
+  scroll-behavior: smooth;
+}
+
+@media (max-width: 640px) {
+  html {
+    /* Navbar grows taller in the stacked mobile layout. */
+    scroll-padding-top: 130px;
+  }
 }
 
 body {
@@ -171,7 +181,12 @@ body,
   right: 10px;
   bottom: 4px;
   height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.86), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.86),
+    transparent
+  );
   opacity: 0;
   transform: scaleX(0.65);
   transition:

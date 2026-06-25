@@ -14,7 +14,7 @@ tags:
 
 ---
 
-## ❓ Почему смайлы не отображаются
+## ❓ Почему смайлы не отображаются {#why-missing}
 
 На Twitch часть популярных смайлов загружается не с самого Twitch, а через сторонние сервисы:
 
@@ -32,9 +32,9 @@ tags:
 
 ---
 
-## 🚩 РФ без VPN: самый простой вариант
+## 🚩 РФ без VPN: самый простой вариант {#rf-no-vpn}
 
-### 🖥️ ПК / браузер
+### 🖥️ ПК / браузер {#rf-pc-browser}
 
 Используйте [**Reyohoho Twitch Extension**](https://ext.rte.net.ru/) — расширение для Chrome, Chromium-браузеров и Firefox, ориентированное на работу с эмоутами при блокировках.
 
@@ -51,9 +51,9 @@ tags:
 
 ---
 
-## 🌍 Если вы вне РФ или используете VPN
+## 🌍 Если вы вне РФ или используете VPN {#outside-rf-or-vpn}
 
-### 🖥️ ПК / браузер
+### 🖥️ ПК / браузер {#vpn-pc-browser}
 
 В этом случае можно ставить обычные расширения:
 
@@ -66,9 +66,9 @@ tags:
 
 ---
 
-## 📱 Мобильные решения
+## 📱 Мобильные решения {#mobile}
 
-### 🤖 Android
+### 🤖 Android {#android}
 
 - [**Frosty от Reyohoho**](https://github.com/reyohoho/frosty-reyohoho/releases) — сборка Frosty с доработками для отображения смайлов при блокировках.
 - [**PurpleTV**](https://t.me/pubTw) — модифицированный Twitch-клиент с поддержкой сторонних смайлов.
@@ -77,7 +77,7 @@ tags:
 
 > ⚠️ **Если скачиваете APK не из Google Play**, берите файл только из официального источника проекта и не устанавливайте случайные перезаливы.
 
-### 🍎 iOS
+### 🍎 iOS {#ios}
 
 - [**Frosty**](https://apps.apple.com/us/app/frosty-for-twitch/id1603987585) — клиент Twitch с поддержкой сторонних смайлов.
 
@@ -85,7 +85,7 @@ tags:
 
 ---
 
-## 🔗 Полезные ссылки
+## 🔗 Полезные ссылки {#links}
 
 - [Reyohoho Twitch Extension](https://ext.rte.net.ru/)
 - [Frosty от Reyohoho для Android](https://github.com/reyohoho/frosty-reyohoho/releases)
@@ -96,7 +96,7 @@ tags:
 
 ---
 
-## ❓ FAQ
+## ❓ FAQ {#faq}
 
 **Почему обычные 7TV, FFZ и BTTV не работают в РФ?**
 

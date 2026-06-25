@@ -1,7 +1,7 @@
 import { defineNuxtConfig } from "nuxt/config";
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const contentDir = path.resolve(__dirname, "content");
 
@@ -69,6 +69,10 @@ export default defineNuxtConfig({
           rel: "stylesheet",
           href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap",
         },
+        {
+          rel: "stylesheet",
+          href: "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0",
+        },
       ],
       meta: [
         { name: "theme-color", content: "#09090b" },
@@ -93,6 +97,9 @@ export default defineNuxtConfig({
   },
   content: {
     highlight: false,
+    markdown: {
+      remarkPlugins: [pathToFileURL(path.resolve(__dirname, "lib/remark-heading-ids.mjs")).href],
+    },
   },
   routeRules: {
     "/guides/**": { prerender: true },
