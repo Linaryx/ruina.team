@@ -317,7 +317,7 @@ watch(
   height: 32px;
   padding: 0;
   border: 1px solid var(--color-brand-accent-1);
-  border-radius: 6px;
+  border-radius: 10px;
   background: transparent;
   color: var(--color-brand-accent-bright);
   cursor: pointer;
